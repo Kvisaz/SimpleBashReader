@@ -11,7 +11,6 @@ public class LoaderBash extends LoaderBase {
     private int pageId;
     BashPageType pageType;
 
-    // todo ДОБАВИТЬ ТИП - КОМИКС, БЕЗДНА, ПОСЛЕДНИЕ СТРАНИЦЫ, СТРАНИЦЫ ПО НОМЕРУ, Rss
     public LoaderBash(Context context, int pageId, BashPageType pageType) {
         super(context);
         this.pageId = pageId;

@@ -21,6 +21,10 @@ import ru.kvisaz.bashreader.loader.LoaderBash;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
+    // todo 1  - ListView (load BashPageTest)
+    // todo 2  - load in ListView real page
+    //           - parse page into BashPage object
+
     TextView sampleText;
 
     @Override
