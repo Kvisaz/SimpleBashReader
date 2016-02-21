@@ -14,7 +14,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
-import ru.kvisaz.bashreader.common.LoaderBash;
+import ru.kvisaz.bashreader.loader.LoaderBash;
 import ru.kvisaz.bashreader.custom.Constants;
 
 
@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public Loader<String> onCreateLoader(int id, Bundle args) {
         switch(id){
             case(R.id.sampleText):
-                int pageId = 1;
+                int pageId = 0;
                 return new LoaderBash(this,pageId);
             default:
                 return null;

@@ -10,19 +10,18 @@ import ru.kvisaz.bashreader.custom.Constants;
 
 /**
  *   Client functions
- *   get server response in same thread
+ *   get server response in same thread - use loader or any other async task
  */
 public class Client {
 
     public static String getPage(int pageId) throws IOException {
-        restAPI service = ApiFactory.getApiService();
+        restAPI service = RetrofitFactory.getApiService();
         Call<ResponseBody> call;
         if(pageId<=0)
             call = service.loadLastPage();
         else
             call = service.loadPage(pageId);
 
-        // прямое исполнение, не асинхронное -
         ResponseBody responseBody = call.execute().body();
 
         String code = getAsString(responseBody);
