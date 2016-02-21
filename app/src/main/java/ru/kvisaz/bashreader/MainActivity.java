@@ -9,13 +9,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 
-import ru.kvisaz.bashreader.loader.LoaderBash;
+import ru.kvisaz.bashreader.custom.BashPageType;
 import ru.kvisaz.bashreader.custom.Constants;
+import ru.kvisaz.bashreader.loader.LoaderBash;
 
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
@@ -83,7 +84,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         switch(id){
             case(R.id.sampleText):
                 int pageId = 0;
-                return new LoaderBash(this,pageId);
+                BashPageType type = BashPageType.Index;
+                return new LoaderBash(this,pageId,type);
             default:
                 return null;
         }

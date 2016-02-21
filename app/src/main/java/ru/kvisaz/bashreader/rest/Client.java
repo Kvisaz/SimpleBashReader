@@ -23,10 +23,13 @@ public class Client {
             call = service.loadPage(pageId);
 
         ResponseBody responseBody = call.execute().body();
-
         String code = getAsString(responseBody);
 
         return code;
+    }
+
+    public static String getLastPage() throws IOException{
+        return getPage(0);
     }
 
 
