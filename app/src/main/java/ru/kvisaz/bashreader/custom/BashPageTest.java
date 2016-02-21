@@ -8,6 +8,8 @@ public class BashPageTest extends BashPage {
     BashPageTest(){
         quotes = new ArrayList<>();
 
+        // delete this comment
+
         int quote_id = 1;
         String date = "2016-01-10 09:12"; // ! Date отдаётся в Locale
         int rating = 3915;
