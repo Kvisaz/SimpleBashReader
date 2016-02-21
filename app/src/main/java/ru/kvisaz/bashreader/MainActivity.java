@@ -12,8 +12,13 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import ru.kvisaz.bashreader.adapter.AdapterDataFactory;
+import ru.kvisaz.bashreader.adapter.AdapterMapping;
+import ru.kvisaz.bashreader.custom.BashPageTest;
 import ru.kvisaz.bashreader.custom.BashPageType;
 import ru.kvisaz.bashreader.custom.Constants;
 import ru.kvisaz.bashreader.loader.LoaderBash;
@@ -31,11 +36,24 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        setupTextView();
+
+//        setupTextView();
+
+        ListView listView = (ListView) findViewById(R.id.listViewMy);
+        int itemViewId = R.layout.quote;
+        SimpleAdapter adapter = new SimpleAdapter(this,
+                AdapterDataFactory.getData(new BashPageTest()),
+                itemViewId,
+                AdapterMapping.from,
+                AdapterMapping.to);
+
+        listView.setAdapter(adapter);
+
+
         setupBar();
         setupFAB();
 
-        getLoaderManager().initLoader(R.id.sampleText,Bundle.EMPTY,this);
+//        getLoaderManager().initLoader(R.id.sampleText,Bundle.EMPTY,this);
 
     }
 

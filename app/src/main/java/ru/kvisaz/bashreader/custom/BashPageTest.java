@@ -5,7 +5,8 @@ import java.util.ArrayList;
 
 public class BashPageTest extends BashPage {
 
-    BashPageTest(){
+    public BashPageTest(){
+
         quotes = new ArrayList<>();
 
         // delete this comment
@@ -82,9 +83,9 @@ public class BashPageTest extends BashPage {
         quotes.add(new BashQuote(quote_id,text,date,rating));
 
         quote_id = 8;
-        date = "";
+        date = "2016-01-09 08:14";
         rating = 3421;
-        text = "";
+        text = "Тут текст потерялся, но я его заполнил. Все равно это плейсхолдер, чтобы место занять.";
 
         quotes.add(new BashQuote(quote_id,text,date,rating));
 

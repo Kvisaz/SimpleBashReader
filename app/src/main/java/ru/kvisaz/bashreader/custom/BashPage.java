@@ -12,4 +12,6 @@ public class BashPage {
     public BashPage(){
         quotes = new ArrayList<>();
     }
+
+    public ArrayList<BashQuote> getQuotes(){ return quotes; }
 }
