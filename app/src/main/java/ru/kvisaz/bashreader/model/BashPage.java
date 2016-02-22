@@ -14,4 +14,7 @@ public class BashPage {
     }
 
     public ArrayList<BashQuote> getQuotes(){ return quotes; }
+
+    public void add(BashQuote quote){ quotes.add(quote); }
+    public void clear(){ quotes.clear();}
 }

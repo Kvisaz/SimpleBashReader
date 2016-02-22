@@ -7,7 +7,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,37 +15,49 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.Map;
+
 import ru.kvisaz.bashreader.adapter.AdapterDataFactory;
 import ru.kvisaz.bashreader.adapter.AdapterMapping;
+import ru.kvisaz.bashreader.model.BashPage;
 import ru.kvisaz.bashreader.model.BashPageTest1;
+import ru.kvisaz.bashreader.model.BashPageTest2;
 import ru.kvisaz.bashreader.model.BashPageType;
 import ru.kvisaz.bashreader.model.Constants;
 import ru.kvisaz.bashreader.loader.LoaderBash;
+import ru.kvisaz.bashreader.parser.Parser;
 
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo 2  - load in ListView real page
-    //           - parse page into BashPage object
+    // todo 3  - вывод HTML в TextView с форматированием
+
 
     TextView sampleText;
     ListView listView;
+    SimpleAdapter adapter;
+    ArrayList<Map<String,Object>> currentQuotes;
+    final int LOADER_ID = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setupListView();
-
-
-
         setupBar();
         setupFAB();
 
-//        getLoaderManager().initLoader(R.id.sampleText,Bundle.EMPTY,this);
+        // todo - отделить настройку адаптера от вывода страниц
+        setupListView();
+
+        // тест
+        showBashPage(new BashPageTest2());
+
+        startBashStringLoader();
 
     }
+
 
     private void setupListView() {
         listView = (ListView) findViewById(R.id.listViewMy);
@@ -55,8 +66,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void setupListViewAdapter(ListView listView) {
         int itemViewId = R.layout.quote;
-        SimpleAdapter adapter = new SimpleAdapter(this,
-                AdapterDataFactory.getData(new BashPageTest1()),
+        currentQuotes = AdapterDataFactory.getData(new BashPageTest1());
+        adapter = new SimpleAdapter(this,
+                currentQuotes,
                 itemViewId,
                 AdapterMapping.from,
                 AdapterMapping.to);
@@ -64,11 +76,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
 
-
-    private void setupTextView() {
-        sampleText = (TextView)findViewById(R.id.sampleText);
-        sampleText.setMovementMethod(new ScrollingMovementMethod());
-    }
 
 
     private void setupBar() {
@@ -109,10 +116,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
+    //  Loader .....................................
+    private Loader<String> startBashStringLoader() {
+        return getLoaderManager().initLoader(LOADER_ID, Bundle.EMPTY, this);
+    }
+
     @Override
     public Loader<String> onCreateLoader(int id, Bundle args) {
         switch(id){
-            case(R.id.sampleText):
+            case(LOADER_ID):
                 int pageId = 0;
                 BashPageType type = BashPageType.Index;
                 return new LoaderBash(this,pageId,type);
@@ -130,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         int id = loader.getId();
         switch(id){
-            case(R.id.sampleText):
+            case(LOADER_ID):
                 refreshContentOnScreen(data);
                 break;
         }
@@ -147,8 +159,27 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-    // Show new Content on Screen
+    //  Refresh screen .....................................
     private void refreshContentOnScreen(String data) {
-        sampleText.setText(data);
+        // sampleText.setText(data);
+        showBashPage(Parser.convert(data));
     }
+
+    private void showBashPage(BashPage bashPage){
+        //  смотрите, тут интересный для новичков баг, связанный с тем, как работает адаптер и ссылочные переменные
+        // currentQuotes = AdapterDataFactory.getData(bashPage); // не работает!
+        // присваивание создавало новый объект
+        // и currentQuotes ссылалось на новый массив, который не был связан с адаптером
+        //  а связанный массив оставался в памяти, т.к. ссылка на него осталась в адаптере
+        // то есть у нас 1. не обновлялся список 2. возникала течь
+
+        // очистить тот же массив и добавить в него все данные
+        // - вот рабочий вариант для обновления ListView полностью
+        currentQuotes.clear();
+        currentQuotes.addAll(AdapterDataFactory.getData(bashPage));
+
+        adapter.notifyDataSetChanged();
+
+    }
+
 }
