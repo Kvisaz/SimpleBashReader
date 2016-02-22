@@ -3,9 +3,9 @@ package ru.kvisaz.bashreader.model;
 import java.util.ArrayList;
 
 
-public class BashPageTest extends BashPage {
+public class BashPageTest1 extends BashPage {
 
-    public BashPageTest(){
+    public BashPageTest1(){
 
         quotes = new ArrayList<>();
 

@@ -18,7 +18,7 @@ import android.widget.TextView;
 
 import ru.kvisaz.bashreader.adapter.AdapterDataFactory;
 import ru.kvisaz.bashreader.adapter.AdapterMapping;
-import ru.kvisaz.bashreader.model.BashPageTest;
+import ru.kvisaz.bashreader.model.BashPageTest1;
 import ru.kvisaz.bashreader.model.BashPageType;
 import ru.kvisaz.bashreader.model.Constants;
 import ru.kvisaz.bashreader.loader.LoaderBash;
@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setupListView();
 
+
+
         setupBar();
         setupFAB();
 
@@ -54,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void setupListViewAdapter(ListView listView) {
         int itemViewId = R.layout.quote;
         SimpleAdapter adapter = new SimpleAdapter(this,
-                AdapterDataFactory.getData(new BashPageTest()),
+                AdapterDataFactory.getData(new BashPageTest1()),
                 itemViewId,
                 AdapterMapping.from,
                 AdapterMapping.to);
