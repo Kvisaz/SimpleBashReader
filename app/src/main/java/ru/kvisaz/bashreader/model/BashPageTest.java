@@ -1,4 +1,4 @@
-package ru.kvisaz.bashreader.custom;
+package ru.kvisaz.bashreader.model;
 
 import java.util.ArrayList;
 

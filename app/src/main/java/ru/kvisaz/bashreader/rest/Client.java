@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
-import ru.kvisaz.bashreader.custom.Constants;
+import ru.kvisaz.bashreader.model.Constants;
 
 /**
  *   Client functions
@@ -23,6 +23,7 @@ public class Client {
             call = service.loadPage(pageId);
 
         ResponseBody responseBody = call.execute().body();
+        @SuppressWarnings("code")
         String code = getAsString(responseBody);
 
         return code;

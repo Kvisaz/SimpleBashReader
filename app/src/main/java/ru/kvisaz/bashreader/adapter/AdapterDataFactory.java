@@ -4,8 +4,8 @@ package ru.kvisaz.bashreader.adapter;
 import java.util.ArrayList;
 import java.util.Map;
 
-import ru.kvisaz.bashreader.custom.BashPage;
-import ru.kvisaz.bashreader.custom.BashQuote;
+import ru.kvisaz.bashreader.model.BashPage;
+import ru.kvisaz.bashreader.model.BashQuote;
 
 public class AdapterDataFactory {
 

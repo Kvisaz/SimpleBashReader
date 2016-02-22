@@ -4,7 +4,7 @@ import android.content.Context;
 
 import java.io.IOException;
 
-import ru.kvisaz.bashreader.custom.BashPageType;
+import ru.kvisaz.bashreader.model.BashPageType;
 import ru.kvisaz.bashreader.rest.Client;
 
 public class LoaderBash extends LoaderBase {

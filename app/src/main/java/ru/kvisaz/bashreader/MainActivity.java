@@ -18,37 +18,26 @@ import android.widget.TextView;
 
 import ru.kvisaz.bashreader.adapter.AdapterDataFactory;
 import ru.kvisaz.bashreader.adapter.AdapterMapping;
-import ru.kvisaz.bashreader.custom.BashPageTest;
-import ru.kvisaz.bashreader.custom.BashPageType;
-import ru.kvisaz.bashreader.custom.Constants;
+import ru.kvisaz.bashreader.model.BashPageTest;
+import ru.kvisaz.bashreader.model.BashPageType;
+import ru.kvisaz.bashreader.model.Constants;
 import ru.kvisaz.bashreader.loader.LoaderBash;
 
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo 1  - ListView (load BashPageTest)
     // todo 2  - load in ListView real page
     //           - parse page into BashPage object
 
     TextView sampleText;
+    ListView listView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        setupTextView();
-
-        ListView listView = (ListView) findViewById(R.id.listViewMy);
-        int itemViewId = R.layout.quote;
-        SimpleAdapter adapter = new SimpleAdapter(this,
-                AdapterDataFactory.getData(new BashPageTest()),
-                itemViewId,
-                AdapterMapping.from,
-                AdapterMapping.to);
-
-        listView.setAdapter(adapter);
-
+        setupListView();
 
         setupBar();
         setupFAB();
@@ -56,6 +45,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 //        getLoaderManager().initLoader(R.id.sampleText,Bundle.EMPTY,this);
 
     }
+
+    private void setupListView() {
+        listView = (ListView) findViewById(R.id.listViewMy);
+        setupListViewAdapter(listView);
+    }
+
+    private void setupListViewAdapter(ListView listView) {
+        int itemViewId = R.layout.quote;
+        SimpleAdapter adapter = new SimpleAdapter(this,
+                AdapterDataFactory.getData(new BashPageTest()),
+                itemViewId,
+                AdapterMapping.from,
+                AdapterMapping.to);
+        listView.setAdapter(adapter);
+    }
+
+
 
     private void setupTextView() {
         sampleText = (TextView)findViewById(R.id.sampleText);
@@ -118,24 +124,29 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if(loader==null){
             Log.d(Constants.LOGTAG,"Null Loader in Main Activity");
-            return;
-        }
+            return;        }
 
         int id = loader.getId();
         switch(id){
             case(R.id.sampleText):
-                sampleText.setText(data);
+                refreshContentOnScreen(data);
                 break;
         }
     }
+
 
     @Override
     public void onLoaderReset(Loader<String> loader) {
         int id = loader.getId();
         switch(id){
             case(R.id.sampleText):
-                Log.d(Constants.LOGTAG,"Sample Loader Reset");
+                Log.d(Constants.LOGTAG, "Sample Loader Reset");
                 break;
         }
+    }
+
+    // Show new Content on Screen
+    private void refreshContentOnScreen(String data) {
+        sampleText.setText(data);
     }
 }
