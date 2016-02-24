@@ -3,17 +3,17 @@ package ru.kvisaz.bashreader;
 import android.app.LoaderManager;
 import android.content.Loader;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -31,11 +31,29 @@ import ru.kvisaz.bashreader.parser.Parser;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo 3  - вывод HTML в TextView с форматированием
+    // todo 1 - загрузка страниц через Drawer
 
+    // todo 2 - полиш Drawer
+//           - статический для планшетов
+//           - с тулбаром
+//           - запуск по нажатию иконки приложения в ActionBar
+//           -
+    // todo 3 - навигация по страницам
 
-    TextView sampleText;
-    ListView listView;
+    //
+    // todo 4  - можно ли подключить Spanned к адаптеру?
+    // todo 5  - создание БД
+    // todo 6  - сохранение полученных страниц в БД
+    // todo 7  - получаем страницы из БД
+    // todo 8 - навигация по страницам (если нет в БД - обращаемся в онлайн с уведомлением)
+
+    // todo 9 - комиксы
+
+    private String[] topics = Constants.topics;
+    private ListView listViewDrawer;
+    private DrawerLayout drawerLayout;
+
+    ListView listViewQuotes;
     SimpleAdapter adapter;
     ArrayList<Map<String,Object>> currentQuotes;
     final int LOADER_ID = 1;
@@ -46,10 +64,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setContentView(R.layout.activity_main);
 
         setupBar();
-        setupFAB();
 
-        // todo - отделить настройку адаптера от вывода страниц
-        setupListView();
+        setupDrawer();
+
+        // todo 20 - отделить настройку адаптера от вывода страниц
+        setupListViewQuotes();
 
         // тест
         showBashPage(new BashPageTest2());
@@ -58,10 +77,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
+    private void setupDrawer() {
+        drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
 
-    private void setupListView() {
-        listView = (ListView) findViewById(R.id.listViewMy);
-        setupListViewAdapter(listView);
+        listViewDrawer = (ListView)findViewById(R.id.drawerListView);
+
+        listViewDrawer.setAdapter(new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_1,
+                topics));
+        listViewDrawer.setOnItemClickListener(new DrawerItemClickListener());
+
+    }
+
+
+    private void setupListViewQuotes() {
+        listViewQuotes = (ListView) findViewById(R.id.listViewMy);
+        setupListViewAdapter(listViewQuotes);
     }
 
     private void setupListViewAdapter(ListView listView) {
@@ -83,16 +114,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setSupportActionBar(toolbar);
     }
 
-    private void setupFAB() {
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -116,7 +138,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
-    //  Loader .....................................
+
+    //  Loader ..........................................................................
     private Loader<String> startBashStringLoader() {
         return getLoaderManager().initLoader(LOADER_ID, Bundle.EMPTY, this);
     }
@@ -153,13 +176,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onLoaderReset(Loader<String> loader) {
         int id = loader.getId();
         switch(id){
-            case(R.id.sampleText):
+            case(LOADER_ID):
                 Log.d(Constants.LOGTAG, "Sample Loader Reset");
                 break;
         }
     }
 
-    //  Refresh screen .....................................
+
+    //  Refresh screen ..........................................................................
     private void refreshContentOnScreen(String data) {
         // sampleText.setText(data);
         showBashPage(Parser.convert(data));
@@ -182,4 +206,25 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
+
+
+    //  Drawer ..........................................................................
+    private class DrawerItemClickListener implements android.widget.AdapterView.OnItemClickListener {
+
+
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            selectItem(position);
+
+            //  todo 00 - смена заголовка у тулбара
+
+            drawerLayout.closeDrawer(listViewDrawer);
+
+        }
+    }
+
+    //  todo 01 - вызов команды, показ любой другой рубрики
+    private void selectItem(int position) {
+        listViewDrawer.setItemChecked(position, true);
+    }
 }

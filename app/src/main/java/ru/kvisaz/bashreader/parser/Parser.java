@@ -8,13 +8,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.text.ParseException;
-
 import ru.kvisaz.bashreader.model.BashPage;
 import ru.kvisaz.bashreader.model.BashQuote;
 import ru.kvisaz.bashreader.model.Constants;
-
-// todo  - обработка ошибок
 
 /*
 *       Parser rawHTML->BashPage
@@ -22,7 +18,10 @@ import ru.kvisaz.bashreader.model.Constants;
 *       Защита
 *       1. в блоке div.quote - баннер => NPE, возвращаем null цитату и не добавляем
 *       2.
-*
+*        //  did - 1. обработка свежих цитат со скрытым рейтингом (???).
+ *                      - решено через дополнительный try-catch
+ *
+
 * */
 public class Parser {
 
@@ -77,8 +76,8 @@ public class Parser {
             // ошибка парсинга - какого-то элемента не хватает
             if (idList.size()<1 || textList.size()<1 || dateList.size()<1 || ratingList.size()<1 ) return null;
 
-            String idStr = idList.first().text();
-            idStr = idStr.replace("#", "");
+            String idStr = idList.first().attr("href");
+            idStr = idStr.replace("/quote/", "");
             id = Integer.parseInt(idStr);
 
             text = textList.first().html();
@@ -87,9 +86,16 @@ public class Parser {
 
             date = dateList.first().text();
 
+            // у цитат возможен рейтинг, обозначенный не цифрами (скрытый)
             String ratingStr = ratingList.first().text();
+            try {
+                rating = Integer.parseInt(ratingStr);
+            }
+            catch (Exception e){
+                rating = 0;
+            }
 
-            rating = Integer.parseInt(ratingStr);
+
         }
         catch (Exception e)
         {

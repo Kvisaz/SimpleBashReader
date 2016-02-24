@@ -16,7 +16,7 @@ public class AdapterDataFactory {
 
         data = new ArrayList<>();
         for(BashQuote quote: bashPage.getQuotes()){
-            head = quote.date;
+            head = quote.date + "\t\t " + quote.rating + "\t\t" + quote.id;
             text = quote.text;
             data.add(AdapterMapping.getMap(head, text));
         }
