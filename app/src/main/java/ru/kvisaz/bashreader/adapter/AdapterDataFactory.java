@@ -10,17 +10,22 @@ import ru.kvisaz.bashreader.model.BashQuote;
 public class AdapterDataFactory {
 
     public static ArrayList<Map<String,Object>> getData(BashPage bashPage){
-        ArrayList<Map<String,Object>> data;
+        ArrayList<Map<String,Object>> listOfMap;
         String head;
         String text;
 
-        data = new ArrayList<>();
+        String date;
+        String rating;
+        String id;
+
+        listOfMap = new ArrayList<>();
         for(BashQuote quote: bashPage.getQuotes()){
+
             head = quote.date + "\t\t " + quote.rating + "\t\t" + quote.id;
             text = quote.text;
-            data.add(AdapterMapping.getMap(head, text));
+            listOfMap.add(AdapterMapping.getMap(head, text));
         }
 
-        return data;
+        return listOfMap;
     }
 }

@@ -21,6 +21,7 @@ import ru.kvisaz.bashreader.model.Constants;
 *        //  did - 1. обработка свежих цитат со скрытым рейтингом (???).
  *                      - решено через дополнительный try-catch
  *
+   *     todo СТРАНИЦЫ БЕЗДНЫ НЕ ПАРСЯТСЯ - потому что у неё нет рейтинга
 
 * */
 public class Parser {
@@ -73,27 +74,46 @@ public class Parser {
             Elements dateList = rawQuote.select(DATE_QUERY);
             Elements ratingList = rawQuote.select(RATING_QUERY);
 
-            // ошибка парсинга - какого-то элемента не хватает
-            if (idList.size()<1 || textList.size()<1 || dateList.size()<1 || ratingList.size()<1 ) return null;
+            // текст - обязателен. Ид и рейтинг нет (у цитат из бездны он не показывается).
+            if (textList.size()<1 ) return null;
 
-            String idStr = idList.first().attr("href");
-            idStr = idStr.replace("/quote/", "");
-            id = Integer.parseInt(idStr);
+            // поскольку у цитат из бездны своя уникальная нумерация идами (речь идет про AbyssBest
+            // - для них потребуется отдельная таблица в БД
+
 
             text = textList.first().html();
             text = Html.fromHtml(text).toString(); // clean br tags
 
-
-            date = dateList.first().text();
-
-            // у цитат возможен рейтинг, обозначенный не цифрами (скрытый)
-            String ratingStr = ratingList.first().text();
-            try {
-                rating = Integer.parseInt(ratingStr);
+            // id отсутствует у Бездны
+            if(idList.size()<1) { id = 0; }
+            else{
+                String idStr = idList.first().attr("href");
+                idStr = idStr.replace("/quote/", "");
+                // у цитат в Бездне - id отсутствует, есть нумерация в AbyssBest
+                try {
+                    id = Integer.parseInt(idStr);
+                }
+                catch (Exception e){
+                    id = 0;
+                }
             }
-            catch (Exception e){
-                rating = 0;
+
+            if(dateList.size()<1) {date = "00";}
+            else{
+                date = dateList.first().text();
             }
+
+            if(ratingList.size()<1) {rating = 0;}
+            else{
+                // у цитат в AbyssBest возможен рейтинг, обозначенный не цифрами (скрытый)
+                try {
+                    rating = Integer.parseInt(ratingList.first().text());
+                }
+                catch (Exception e){
+                    rating = 0;
+                }
+            }
+
 
 
         }

@@ -20,10 +20,23 @@ public class LoaderBash extends LoaderBase {
 
     @Override
     protected String clientResponse() throws IOException {
-
         switch(pageType){
             case LastPage:
                 return Client.getPage(pageId);
+            case Page:
+                return Client.getPage(pageId);
+            case Random:
+                return Client.getRandom();
+            case ByRating:
+                return Client.getByRating();
+            case Best:
+                return Client.getBest();
+            case Abyss:
+                return Client.getAbyss();
+            case AbyssTop:
+                return Client.getAbyssTop();
+            case AbyssBest:
+                return Client.getAbyssBestLast();
             default:
                 return Client.getLastPage();
         }

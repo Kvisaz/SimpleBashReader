@@ -52,7 +52,7 @@ public class Client {
         return grab(RetrofitFactory.getApiService().loadAbyssTop());
     }
 
-    public static String getAbyssBestLast(String bashDate) throws IOException{
+    public static String getAbyssBestLast() throws IOException{
         return grab(RetrofitFactory.getApiService().loadAbyssBestLast());
     }
 
