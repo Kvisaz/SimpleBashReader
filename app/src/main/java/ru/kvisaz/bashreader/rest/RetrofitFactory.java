@@ -7,13 +7,13 @@ import ru.kvisaz.bashreader.model.Constants;
 
 public class RetrofitFactory {
 
-    private static restAPI restApi;
+    private static RestAPInew restApi;
 
 
     @NonNull
-    public static restAPI getApiService(){
+    public static RestAPInew getApiService(){
         if(restApi==null){
-            restApi = getRetrofit().create(restAPI.class);
+            restApi = getRetrofit().create(RestAPInew.class);
         }
         return restApi;
     }
