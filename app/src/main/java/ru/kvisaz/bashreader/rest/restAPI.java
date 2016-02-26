@@ -12,23 +12,38 @@ public interface restAPI {
     @GET("index/{pageid}")
     Call<ResponseBody> loadPage(@Path("pageid") int pageId);
 
-    @GET("abyssbest")
+    @GET("random")
+    Call<ResponseBody> loadRandom();
+
+    @GET("best")
+    Call<ResponseBody> loadBest();
+
+    @GET("byrating")
+    Call<ResponseBody> loadByRatingLast();
+
+    @GET("byrating/{pagenumber}")
+    Call<ResponseBody> loadByRatingLast(@Path("pagenumber") int pageNumber);
+
+    @GET("abyss")
     Call<ResponseBody> loadAbyss();
 
-    @GET("abyssbest/{date}")
-    Call<ResponseBody> loadAbyss(@Path("date") String date);
+    @GET("abysstop")
+    Call<ResponseBody> loadAbyssTop();
 
-    @GET("comics")
+    @GET("abyssbest/{date}")
+    Call<ResponseBody> loadAbyssByDate(@Path("date") String date);
+
+    @GET("abyssbest")
+    Call<ResponseBody> loadAbyssBestLast();
+
+   /* @GET("comics")
     Call<ResponseBody> loadLastComics();
 
     @GET("comics/{id}")
     Call<ResponseBody> loadComics(@Path("id") int comicsId);
 
     @GET("rss/")
-    Call<ResponseBody> loadRSS();
-
-    @GET("best")
-    Call<ResponseBody> loadBest();
+    Call<ResponseBody> loadRSS();*/
 
 
 }
