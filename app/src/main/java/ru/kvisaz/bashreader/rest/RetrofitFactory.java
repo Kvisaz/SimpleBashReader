@@ -7,15 +7,20 @@ import ru.kvisaz.bashreader.model.Constants;
 
 public class RetrofitFactory {
 
+    private static RestApi restApi;
+
+
     @NonNull
-    public static restAPI getApiService(){
-        return getRetrofit().create(restAPI.class);
+    public static RestApi getApiService(){
+        if(restApi==null){
+            restApi = getRetrofit().create(RestApi.class);
+        }
+        return restApi;
     }
 
     @NonNull
     public static Retrofit getRetrofit() {
 
-        @SuppressWarnings("retrofit")
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(Constants.BaseUrl)
                 .build();

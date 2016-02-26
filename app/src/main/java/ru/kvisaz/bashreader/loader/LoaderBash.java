@@ -19,10 +19,10 @@ public class LoaderBash extends LoaderBase {
     }
 
     @Override
-    protected String clientCall() throws IOException {
+    protected String clientResponse() throws IOException {
 
         switch(pageType){
-            case Index:
+            case LastPage:
                 return Client.getPage(pageId);
             default:
                 return Client.getLastPage();

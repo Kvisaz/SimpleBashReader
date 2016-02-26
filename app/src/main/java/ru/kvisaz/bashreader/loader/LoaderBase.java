@@ -10,7 +10,7 @@ import ru.kvisaz.bashreader.model.Constants;
 
 public abstract class LoaderBase extends AsyncTaskLoader<String> {
 
-    protected abstract String clientCall() throws IOException;
+    protected abstract String clientResponse() throws IOException;
 
     public LoaderBase(Context context) {
         super(context);
@@ -25,7 +25,7 @@ public abstract class LoaderBase extends AsyncTaskLoader<String> {
     @Override
     public String loadInBackground() {
         try{
-            return clientCall();
+            return clientResponse();
         }
         catch (IOException e)
         {

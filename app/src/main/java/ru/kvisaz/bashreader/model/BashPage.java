@@ -1,6 +1,7 @@
 package ru.kvisaz.bashreader.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class BashPage {
     ArrayList<BashQuote> quotes;
@@ -8,6 +9,8 @@ public class BashPage {
     int firstIndex;
     int lastIndex;
     BashPageType type;
+
+    public HashMap<Integer,BashPageType> topicMap;
 
     public BashPage(){
         quotes = new ArrayList<>();

@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
-import ru.kvisaz.bashreader.model.Constants;
 
 /**
  *   Client functions
@@ -14,18 +13,14 @@ import ru.kvisaz.bashreader.model.Constants;
  */
 public class Client {
 
+    public static final String charset = "windows-1251";
+
     public static String getPage(int pageId) throws IOException {
-        restAPI service = RetrofitFactory.getApiService();
-        Call<ResponseBody> call;
+        String code="";
         if(pageId<=0)
-            call = service.loadLastPage();
+            code = grab(RetrofitFactory.getApiService().loadLastPage());
         else
-            call = service.loadPage(pageId);
-
-        ResponseBody responseBody = call.execute().body();
-        @SuppressWarnings("code")
-        String code = getAsString(responseBody);
-
+            code = grab(RetrofitFactory.getApiService().loadPage(pageId));
         return code;
     }
 
@@ -33,9 +28,46 @@ public class Client {
         return getPage(0);
     }
 
+    public static String getRandom() throws IOException{
+        return grab(RetrofitFactory.getApiService().loadRandom());
+    }
+
+    public static String getBest() throws IOException{
+        return grab(RetrofitFactory.getApiService().loadBest());
+    }
+
+    public static String getByRating() throws IOException{
+        return grab(RetrofitFactory.getApiService().loadByRatingLast());
+    }
+
+    public static String getByRating(int pageNumber) throws IOException{
+        return grab(RetrofitFactory.getApiService().loadByRatingLast(pageNumber));
+    }
+
+    public static String getAbyss() throws IOException{
+        return grab(RetrofitFactory.getApiService().loadAbyss());
+    }
+
+    public static String getAbyssTop() throws IOException{
+        return grab(RetrofitFactory.getApiService().loadAbyssTop());
+    }
+
+    public static String getAbyssBestLast(String bashDate) throws IOException{
+        return grab(RetrofitFactory.getApiService().loadAbyssBestLast());
+    }
+
+    public static String getAbyssBestByDate(String bashDate) throws IOException{
+        return grab(RetrofitFactory.getApiService().loadAbyssByDate(bashDate));
+    }
+
+    //  Client common functions
+    private static String grab(Call<ResponseBody> call) throws IOException {
+        ResponseBody responseBody = call.execute().body();
+        return getAsString(responseBody);
+    }
 
     private static String getAsString(ResponseBody responseBody) throws IOException {
-        BufferedReader br = new BufferedReader(new InputStreamReader(responseBody.byteStream(), Constants.charset));
+        BufferedReader br = new BufferedReader(new InputStreamReader(responseBody.byteStream(), charset));
         StringBuilder sb = new StringBuilder("");
         while(br.ready())
         {

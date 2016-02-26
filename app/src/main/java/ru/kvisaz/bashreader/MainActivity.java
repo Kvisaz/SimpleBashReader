@@ -20,6 +20,7 @@ import java.util.Map;
 
 import ru.kvisaz.bashreader.adapter.AdapterDataFactory;
 import ru.kvisaz.bashreader.adapter.AdapterMapping;
+import ru.kvisaz.bashreader.model.BashMenu;
 import ru.kvisaz.bashreader.model.BashPage;
 import ru.kvisaz.bashreader.model.BashPageTest1;
 import ru.kvisaz.bashreader.model.BashPageTest2;
@@ -31,16 +32,18 @@ import ru.kvisaz.bashreader.parser.Parser;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo 1 - загрузка страниц через Drawer
+    // todo 1 - загрузка разных рубрик через Drawer
 
     // todo 2 - полиш Drawer
+//           - запуск по нажатию иконки приложения в ActionBar
 //           - статический для планшетов
 //           - с тулбаром
-//           - запуск по нажатию иконки приложения в ActionBar
-//           -
+
     // todo 3 - навигация по страницам
 
-    //
+    // todo 3.5 - адаптация к поворотам экрана
+
+
     // todo 4  - можно ли подключить Spanned к адаптеру?
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
@@ -49,20 +52,25 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     // todo 9 - комиксы
 
-    private String[] topics = Constants.topics;
+    boolean tabletWidth;
+
     private ListView listViewDrawer;
     private DrawerLayout drawerLayout;
 
     ListView listViewQuotes;
     SimpleAdapter adapter;
     ArrayList<Map<String,Object>> currentQuotes;
-    final int LOADER_ID = 1;
+
+    final int BASH_LOADER_ID = 1;
+
+    Bundle loaderArgs;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        tabletWidth = getResources().getBoolean(R.bool.w820dp);
         setupBar();
 
         setupDrawer();
@@ -73,21 +81,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         // тест
         showBashPage(new BashPageTest2());
 
-        startBashStringLoader();
+        startBashLoader();
 
     }
 
-    private void setupDrawer() {
-        drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
 
-        listViewDrawer = (ListView)findViewById(R.id.drawerListView);
-
-        listViewDrawer.setAdapter(new ArrayAdapter<String>(this,
-                android.R.layout.simple_list_item_1,
-                topics));
-        listViewDrawer.setOnItemClickListener(new DrawerItemClickListener());
-
-    }
 
 
     private void setupListViewQuotes() {
@@ -140,20 +138,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     //  Loader ..........................................................................
-    private Loader<String> startBashStringLoader() {
-        return getLoaderManager().initLoader(LOADER_ID, Bundle.EMPTY, this);
+    private void startBashLoader() {
+        setLoaderArgs(0);
+        getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+    }
+
+    private void restartBashLoader(int topicNumber) {
+        setLoaderArgs(topicNumber);
+        getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+    }
+
+    private Bundle setLoaderArgs(int topicNumber) {
+        loaderArgs = new Bundle();
+        loaderArgs.putInt(BashMenu.bundleStringName, topicNumber);
+        return null;
     }
 
     @Override
-    public Loader<String> onCreateLoader(int id, Bundle args) {
-        switch(id){
-            case(LOADER_ID):
-                int pageId = 0;
-                BashPageType type = BashPageType.Index;
-                return new LoaderBash(this,pageId,type);
-            default:
-                return null;
-        }
+    public Loader<String> onCreateLoader(int loaderId, Bundle args) {
+        int topicNumber = args.getInt(BashMenu.bundleStringName);
+        BashPageType type = BashMenu.getType(topicNumber);
+        int pageId = 0;
+        return new LoaderBash(this,pageId,type);
     }
 
     @Override
@@ -161,22 +167,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if(loader==null){
             Log.d(Constants.LOGTAG,"Null Loader in Main Activity");
-            return;        }
-
-        int id = loader.getId();
-        switch(id){
-            case(LOADER_ID):
-                refreshContentOnScreen(data);
-                break;
+            return;
         }
+
+        showBashPage(Parser.convert(data));
     }
 
 
     @Override
     public void onLoaderReset(Loader<String> loader) {
-        int id = loader.getId();
-        switch(id){
-            case(LOADER_ID):
+        switch(loader.getId()){
+            case(BASH_LOADER_ID):
                 Log.d(Constants.LOGTAG, "Sample Loader Reset");
                 break;
         }
@@ -184,10 +185,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     //  Refresh screen ..........................................................................
-    private void refreshContentOnScreen(String data) {
-        // sampleText.setText(data);
-        showBashPage(Parser.convert(data));
-    }
 
     private void showBashPage(BashPage bashPage){
         //  смотрите, тут интересный для новичков баг, связанный с тем, как работает адаптер и ссылочные переменные
@@ -209,10 +206,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     //  Drawer ..........................................................................
+
+    private void setupDrawer() {
+        drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
+
+        listViewDrawer = (ListView)findViewById(R.id.drawerListView);
+
+        listViewDrawer.setAdapter(new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_1,
+                BashMenu.getNamesArray()));
+        listViewDrawer.setOnItemClickListener(new DrawerItemClickListener());
+
+    }
+
+
     private class DrawerItemClickListener implements android.widget.AdapterView.OnItemClickListener {
-
-
-        @Override
+       @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             selectItem(position);
 
@@ -224,7 +233,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     //  todo 01 - вызов команды, показ любой другой рубрики
-    private void selectItem(int position) {
-        listViewDrawer.setItemChecked(position, true);
+    private void selectItem(int topicNumber) {
+        listViewDrawer.setItemChecked(topicNumber, true);
+
+        restartBashLoader(topicNumber);
     }
 }
