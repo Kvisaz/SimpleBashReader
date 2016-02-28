@@ -1,8 +1,13 @@
 package ru.kvisaz.bashreader;
 
 import android.app.LoaderManager;
+import android.content.Context;
 import android.content.Loader;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -18,24 +23,24 @@ import android.widget.SimpleAdapter;
 import java.util.ArrayList;
 import java.util.Map;
 
-import ru.kvisaz.bashreader.adapter.AdapterDataFactory;
-import ru.kvisaz.bashreader.adapter.AdapterMapping;
-import ru.kvisaz.bashreader.model.BashMenu;
-import ru.kvisaz.bashreader.model.BashPage;
-import ru.kvisaz.bashreader.model.BashPageTest1;
-import ru.kvisaz.bashreader.model.BashPageTest2;
-import ru.kvisaz.bashreader.model.BashPageType;
-import ru.kvisaz.bashreader.model.Constants;
+import ru.kvisaz.bashreader.adapter.*;
+import ru.kvisaz.bashreader.model.*;
 import ru.kvisaz.bashreader.loader.LoaderBash;
 import ru.kvisaz.bashreader.parser.Parser;
 
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo 1 - загрузка разных рубрик через Drawer
+    // todo  ДИЗАЙН
+    //   --- ГРАНИЦЕ
 
+    // todo 1 - полиш ToolBar
+    /*      - иконка-гамбургер
+    *       - вывод Title
+    *       - какие опции ActioBar можно реализовать?
+    * */
     // todo 2 - полиш Drawer
-//           - запуск по нажатию иконки приложения в ActionBar
+//           ++ запуск по нажатию иконки приложения в ActionBar
 //           - статический для планшетов
 //           - с тулбаром
 
@@ -57,7 +62,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private ListView listViewDrawer;
     private DrawerLayout drawerLayout;
 
-    ListView listViewQuotes;
+    private String mainTitle;
+    private String drawerTitle;
+
+    ListView listViewBashQuotes;
     SimpleAdapter adapter;
     ArrayList<Map<String,Object>> currentQuotes;
 
@@ -71,6 +79,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         tabletWidth = getResources().getBoolean(R.bool.w820dp);
+        mainTitle = "Main Title";
+        drawerTitle = "Drawer Title";
+
         setupBar();
 
         setupDrawer();
@@ -89,8 +100,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private void setupListViewQuotes() {
-        listViewQuotes = (ListView) findViewById(R.id.listViewMy);
-        setupListViewAdapter(listViewQuotes);
+        listViewBashQuotes = (ListView) findViewById(R.id.listOfBashQuotes);
+        setupListViewAdapter(listViewBashQuotes);
     }
 
     private void setupListViewAdapter(ListView listView) {
@@ -110,6 +121,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void setupBar() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
+
     }
 
 
@@ -139,13 +163,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     //  Loader ..........................................................................
     private void startBashLoader() {
-        setLoaderArgs(0);
-        getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+        restartBashLoader(0);
     }
 
     private void restartBashLoader(int topicNumber) {
-        setLoaderArgs(topicNumber);
-        getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+        if(isNetworkAvailable()) {
+            setLoaderArgs(topicNumber);
+            getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+        }
+        else{
+            showMessage(getResources().getString(R.string.ui_internet_error_message));
+        }
     }
 
     private Bundle setLoaderArgs(int topicNumber) {
@@ -184,9 +212,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
 
-    //  Refresh screen ..........................................................................
+    // ..........................................................................
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 
+    // ..........................................................................
     private void showBashPage(BashPage bashPage){
+
+        if(bashPage==null){
+            showMessage(getResources().getString(R.string.ui_server_error_message));
+            return;
+        }
+
         //  смотрите, тут интересный для новичков баг, связанный с тем, как работает адаптер и ссылочные переменные
         // currentQuotes = AdapterDataFactory.getData(bashPage); // не работает!
         // присваивание создавало новый объект
@@ -204,7 +245,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
 
-
     //  Drawer ..........................................................................
 
     private void setupDrawer() {
@@ -216,8 +256,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 android.R.layout.simple_list_item_1,
                 BashMenu.getNamesArray()));
         listViewDrawer.setOnItemClickListener(new DrawerItemClickListener());
-
     }
+
+
 
 
     private class DrawerItemClickListener implements android.widget.AdapterView.OnItemClickListener {
@@ -232,10 +273,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-    //  todo 01 - вызов команды, показ любой другой рубрики
     private void selectItem(int topicNumber) {
         listViewDrawer.setItemChecked(topicNumber, true);
-
         restartBashLoader(topicNumber);
     }
+
+
+    // ..........................................................................
+    private void showMessage(String message){
+        Snackbar.make(listViewBashQuotes, message, Snackbar.LENGTH_LONG).show();
+    }
+
 }

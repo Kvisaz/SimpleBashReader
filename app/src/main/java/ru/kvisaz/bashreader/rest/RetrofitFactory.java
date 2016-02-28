@@ -3,7 +3,7 @@ package ru.kvisaz.bashreader.rest;
 import android.support.annotation.NonNull;
 
 import retrofit2.Retrofit;
-import ru.kvisaz.bashreader.model.Constants;
+import ru.kvisaz.bashreader.Constants;
 
 public class RetrofitFactory {
 

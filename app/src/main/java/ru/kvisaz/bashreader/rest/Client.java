@@ -6,10 +6,13 @@ import java.io.InputStreamReader;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.Response;
+
 
 /**
  *   Client functions
  *   get server response in same thread - use loader or any other async task
+ *
  */
 public class Client {
 
@@ -24,7 +27,7 @@ public class Client {
         return code;
     }
 
-    public static String getLastPage() throws IOException{
+    public static String getLastPage() throws IOException {
         return getPage(0);
     }
 
@@ -56,14 +59,19 @@ public class Client {
         return grab(RetrofitFactory.getApiService().loadAbyssBestLast());
     }
 
-    public static String getAbyssBestByDate(String bashDate) throws IOException{
+    public static String getAbyssBestByDate(String bashDate) throws IOException {
         return grab(RetrofitFactory.getApiService().loadAbyssByDate(bashDate));
     }
 
     //  Client common functions
     private static String grab(Call<ResponseBody> call) throws IOException {
-        ResponseBody responseBody = call.execute().body();
-        return getAsString(responseBody);
+        Response response = call.execute();
+
+        if(!response.isSuccess()){
+            return null;
+        }
+
+        return getAsString((ResponseBody) response.body());
     }
 
     private static String getAsString(ResponseBody responseBody) throws IOException {

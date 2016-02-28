@@ -10,7 +10,7 @@ import org.jsoup.select.Elements;
 
 import ru.kvisaz.bashreader.model.BashPage;
 import ru.kvisaz.bashreader.model.BashQuote;
-import ru.kvisaz.bashreader.model.Constants;
+import ru.kvisaz.bashreader.Constants;
 
 /*
 *       Parser rawHTML->BashPage
@@ -19,10 +19,8 @@ import ru.kvisaz.bashreader.model.Constants;
 *       1. в блоке div.quote - баннер => NPE, возвращаем null цитату и не добавляем
 *       2.
 *        //  did - 1. обработка свежих цитат со скрытым рейтингом (???).
- *                      - решено через дополнительный try-catch
- *
-   *     todo СТРАНИЦЫ БЕЗДНЫ НЕ ПАРСЯТСЯ - потому что у неё нет рейтинга
-
+*                      - решено через дополнительный try-catch *
+*
 * */
 public class Parser {
 
@@ -41,6 +39,8 @@ public class Parser {
 
     public static BashPage convert(String rawHtml)
     {
+        if(rawHtml==null) return null;
+
         if(cachedHtml!=null && cachedHtml.equals(rawHtml) && cachedPage!=null)
         {
             return cachedPage;

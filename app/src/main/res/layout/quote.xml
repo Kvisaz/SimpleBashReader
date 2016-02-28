@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="@dimen/margin"
+    >
 
     <TextView
         android:id="@+id/quoteDate"
@@ -9,7 +11,8 @@
         android:layout_height="wrap_content"
         android:text="2016-01-06 08:13"
         android:layout_marginTop="@dimen/quoteDateMarginTop"
-        android:layout_marginLeft="@dimen/quoteTextPadding" />
+        android:textColor="@color/colorEasyGray"
+         />
 
     <TextView
         android:id="@+id/quoteText"
@@ -18,8 +21,6 @@
         android:text="Затупил - это когда выходишь в три часа ночи погулять с собакой и глядя на закрывающуюся дверь подъезда вспоминаешь, что ключ от домофона размагнитился и его надо было поменять. Аккумулятор ты этим же вечером снял, чтобы подзарядить и даже в машине теперь не погреешься. Телефон тоже дома, а кроме тебя в квартире никого. и -20 по Цельцию... \n\n Рейтинг: 45546 \t #438008 "
         android:layout_marginBottom="@dimen/quoteTextMarginBottom"
         android:textSize="@dimen/quoteTextSize"
-        android:background="#f3f3f3"
-        android:padding="@dimen/quoteTextPadding"
-        android:textColor="#000000" />
+        android:textColor="@color/colorTextBase" />
 
 </LinearLayout>

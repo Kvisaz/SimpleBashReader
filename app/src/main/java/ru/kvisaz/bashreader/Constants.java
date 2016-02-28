@@ -1,4 +1,4 @@
-package ru.kvisaz.bashreader.model;
+package ru.kvisaz.bashreader;
 
 public class Constants {
     public static final String LOGTAG = "Kvisaz.Bashreader";

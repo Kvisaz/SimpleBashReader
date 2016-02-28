@@ -18,14 +18,25 @@ public class AdapterDataFactory {
         String rating;
         String id;
 
+
         listOfMap = new ArrayList<>();
         for(BashQuote quote: bashPage.getQuotes()){
 
-            head = quote.date + "\t\t " + quote.rating + "\t\t" + quote.id;
+            head = quote.date + formatRating(quote.rating) + formatId(quote.id);
             text = quote.text;
             listOfMap.add(AdapterMapping.getMap(head, text));
         }
 
         return listOfMap;
+    }
+
+    private static String formatId(int id) {
+    if(id==0) return "";
+        return "          #"+id;
+    }
+
+    private static String formatRating(int rating) {
+        if(rating==0) return "";
+        return "          +"+rating;
     }
 }

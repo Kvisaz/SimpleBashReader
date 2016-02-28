@@ -6,7 +6,7 @@ import android.util.Log;
 
 import java.io.IOException;
 
-import ru.kvisaz.bashreader.model.Constants;
+import ru.kvisaz.bashreader.Constants;
 
 public abstract class LoaderBase extends AsyncTaskLoader<String> {
 
