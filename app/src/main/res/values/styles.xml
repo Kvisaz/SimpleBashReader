@@ -1,6 +1,13 @@
 <resources>
 
     <!-- Base application theme. -->
+    <style name="TopBar">
+        <item name="android:textSize">@dimen/topbarTextSize</item>
+        <item name="android:textColor">@color/colorTextHead</item>
+        <item name="android:background">@color/colorPrimaryDark</item>
+    </style>
+
+
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>

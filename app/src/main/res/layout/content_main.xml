@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_marginLeft="@dimen/left_margin_width"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="ru.kvisaz.bashreader.MainActivity"
     tools:showIn="@layout/activity_main"
@@ -16,11 +17,12 @@
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
+            app:popupTheme="@style/AppTheme.PopupOverlay"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             android:elevation="4dp"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            />
 
     </android.support.design.widget.AppBarLayout>
 
@@ -30,6 +32,7 @@
         android:id="@+id/listOfBashQuotes"
 
         />
+
 
 
 </LinearLayout>

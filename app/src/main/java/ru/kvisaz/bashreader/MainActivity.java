@@ -3,6 +3,7 @@ package ru.kvisaz.bashreader;
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.Loader;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -31,20 +32,9 @@ import ru.kvisaz.bashreader.parser.Parser;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo  ДИЗАЙН
-    //   --- ГРАНИЦЕ
+     // todo 2 - обновление титла только после загрузки (если произошла загрузка)
 
-    // todo 1 - полиш ToolBar
-    /*      - иконка-гамбургер
-    *       - вывод Title
-    *       - какие опции ActioBar можно реализовать?
-    * */
-    // todo 2 - полиш Drawer
-//           ++ запуск по нажатию иконки приложения в ActionBar
-//           - статический для планшетов
-//           - с тулбаром
-
-    // todo 3 - навигация по страницам
+     // todo 3 - навигация по страницам
 
     // todo 3.5 - адаптация к поворотам экрана
 
@@ -57,13 +47,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     // todo 9 - комиксы
 
-    boolean tabletWidth;
+    boolean isStaticDrawer;
 
-    private ListView listViewDrawer;
+    private ListView drawerListView;
+    private View drawer;
+
     private DrawerLayout drawerLayout;
 
-    private String mainTitle;
-    private String drawerTitle;
+    private int topicCurrent;
+
+    Toolbar toolbar;
 
     ListView listViewBashQuotes;
     SimpleAdapter adapter;
@@ -78,21 +71,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        tabletWidth = getResources().getBoolean(R.bool.w820dp);
-        mainTitle = "Main Title";
-        drawerTitle = "Drawer Title";
+        isStaticDrawer = getResources().getBoolean(R.bool.w820dp);
 
         setupBar();
 
         setupDrawer();
 
+
         // todo 20 - отделить настройку адаптера от вывода страниц
         setupListViewQuotes();
 
         // тест
+
+        // todo BUG - не выводится этот заголовок
+        toolbar.setTitle("Тестовая страница");
         showBashPage(new BashPageTest2());
 
-        startBashLoader();
+        loadTopic(0);
 
     }
 
@@ -119,13 +114,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private void setupBar() {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
-
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(true);
+        if(!isStaticDrawer){
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeButtonEnabled(true);
+        }
 
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
@@ -137,36 +132,67 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+
+        if (id == R.id.action_refresh) {
+            showMessage(getString(R.string.action_refresh_message));
+            restartBashLoader(topicCurrent);
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    // show content .....................................................................
+    private void showBashPage(BashPage bashPage){
+
+        if(bashPage==null){
+            showMessage(getResources().getString(R.string.ui_server_error_message));
+            return;
+        }
+
+        refreshQuotes(bashPage);
+    }
+
+    private void refreshQuotes(BashPage bashPage) {
+        //  смотрите, тут интересный для новичков баг, связанный с тем, как работает адаптер и ссылочные переменные
+        // currentQuotes = AdapterDataFactory.getData(bashPage); // не работает!
+        // присваивание создавало новый объект
+        // и currentQuotes ссылалось на новый массив, который не был связан с адаптером
+        //  а связанный массив оставался в памяти, т.к. ссылка на него осталась в адаптере
+        // то есть у нас 1. не обновлялся список 2. возникала течь
+
+        // очистить тот же массив и добавить в него все данные
+        // - вот рабочий вариант для обновления ListView полностью
+        currentQuotes.clear();
+        currentQuotes.addAll(AdapterDataFactory.getData(bashPage));
+        adapter.notifyDataSetChanged();
+    }
+
+    private void loadTopic(int topicNumber){
+        toolbar.setTitle(BashMenu.getTitle(topicNumber));
+        restartBashLoader(topicNumber);
+    }
 
     //  Loader ..........................................................................
+
     private void startBashLoader() {
         restartBashLoader(0);
     }
 
     private void restartBashLoader(int topicNumber) {
+
+        topicCurrent = topicNumber;
+
         if(isNetworkAvailable()) {
             setLoaderArgs(topicNumber);
             getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
@@ -220,42 +246,24 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-    // ..........................................................................
-    private void showBashPage(BashPage bashPage){
-
-        if(bashPage==null){
-            showMessage(getResources().getString(R.string.ui_server_error_message));
-            return;
-        }
-
-        //  смотрите, тут интересный для новичков баг, связанный с тем, как работает адаптер и ссылочные переменные
-        // currentQuotes = AdapterDataFactory.getData(bashPage); // не работает!
-        // присваивание создавало новый объект
-        // и currentQuotes ссылалось на новый массив, который не был связан с адаптером
-        //  а связанный массив оставался в памяти, т.к. ссылка на него осталась в адаптере
-        // то есть у нас 1. не обновлялся список 2. возникала течь
-
-        // очистить тот же массив и добавить в него все данные
-        // - вот рабочий вариант для обновления ListView полностью
-        currentQuotes.clear();
-        currentQuotes.addAll(AdapterDataFactory.getData(bashPage));
-
-        adapter.notifyDataSetChanged();
-
-    }
-
 
     //  Drawer ..........................................................................
 
     private void setupDrawer() {
         drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
 
-        listViewDrawer = (ListView)findViewById(R.id.drawerListView);
+        drawer = findViewById(R.id.drawerLayout);
 
-        listViewDrawer.setAdapter(new ArrayAdapter<String>(this,
+        drawerListView = (ListView)findViewById(R.id.drawerListView);
+        drawerListView.setAdapter(new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1,
                 BashMenu.getNamesArray()));
-        listViewDrawer.setOnItemClickListener(new DrawerItemClickListener());
+        drawerListView.setOnItemClickListener(new DrawerItemClickListener());
+
+        if(isStaticDrawer){
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN, drawer);
+            drawerLayout.setScrimColor(Color.TRANSPARENT);
+        }
     }
 
 
@@ -264,19 +272,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private class DrawerItemClickListener implements android.widget.AdapterView.OnItemClickListener {
        @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            selectItem(position);
+           drawerListView.setItemChecked(position, true);
+           loadTopic(position);
 
-            //  todo 00 - смена заголовка у тулбара
-
-            drawerLayout.closeDrawer(listViewDrawer);
-
+           if(!isStaticDrawer)
+               drawerLayout.closeDrawer(drawer);
         }
     }
 
-    private void selectItem(int topicNumber) {
-        listViewDrawer.setItemChecked(topicNumber, true);
-        restartBashLoader(topicNumber);
-    }
+
 
 
     // ..........................................................................
