@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
@@ -32,12 +33,11 @@ import ru.kvisaz.bashreader.parser.Parser;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-     // todo 2 - обновление титла только после загрузки (если произошла загрузка)
-
-     // todo 3 - навигация по страницам
-
     // todo 3.5 - адаптация к поворотам экрана
 
+    // todo 2 - обновление титла только после загрузки (если произошла загрузка)
+
+     // todo 3 - навигация по страницам
 
     // todo 4  - можно ли подключить Spanned к адаптеру?
     // todo 5  - создание БД
@@ -54,9 +54,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private DrawerLayout drawerLayout;
 
+    private int topicUsed;
     private int topicCurrent;
 
     Toolbar toolbar;
+
+    LinearLayout comicsLayout;
 
     ListView listViewBashQuotes;
     SimpleAdapter adapter;
@@ -70,32 +73,44 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
+
         isStaticDrawer = getResources().getBoolean(R.bool.w820dp);
 
         setupBar();
-
         setupDrawer();
 
-
-        // todo 20 - отделить настройку адаптера от вывода страниц
+       // todo 20 - отделить настройку адаптера от вывода страниц
         setupListViewQuotes();
 
-        // тест
-
-        // todo BUG - не выводится этот заголовок
-        toolbar.setTitle("Тестовая страница");
-        showBashPage(new BashPageTest2());
-
-        loadTopic(0);
-
+        if (savedInstanceState == null)
+        {
+            loadTopic(topicUsed);
+        }
     }
 
 
 
+    @Override
+    protected void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putInt(Constants.SAVEDSTATE_TOPIC, topicUsed);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        topicUsed = savedInstanceState.getInt(Constants.SAVEDSTATE_TOPIC);
+
+        reinitTopic(topicUsed);
+    }
 
     private void setupListViewQuotes() {
         listViewBashQuotes = (ListView) findViewById(R.id.listOfBashQuotes);
+        comicsLayout = (LinearLayout) findViewById(R.id.comicsLayout);
+        comicsLayout.setSaveEnabled(true);
+
         setupListViewAdapter(listViewBashQuotes);
     }
 
@@ -145,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if (id == R.id.action_refresh) {
             showMessage(getString(R.string.action_refresh_message));
-            restartBashLoader(topicCurrent);
+            restartBashLoader(topicUsed);
             return true;
         }
 
@@ -160,6 +175,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             return;
         }
 
+        // https://code.google.com/p/android/issues/detail?id=77763
+        getSupportActionBar().setTitle(BashMenu.getTitle(topicCurrent));
+
+        topicUsed = topicCurrent;
         refreshQuotes(bashPage);
     }
 
@@ -179,28 +198,26 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void loadTopic(int topicNumber){
-        toolbar.setTitle(BashMenu.getTitle(topicNumber));
+        topicCurrent = topicNumber;
         restartBashLoader(topicNumber);
     }
 
     //  Loader ..........................................................................
-
-    private void startBashLoader() {
-        restartBashLoader(0);
-    }
-
     private void restartBashLoader(int topicNumber) {
-
-        topicCurrent = topicNumber;
-
-        if(isNetworkAvailable()) {
-            setLoaderArgs(topicNumber);
-            getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
-        }
-        else{
+       if(!isNetworkAvailable()) {
             showMessage(getResources().getString(R.string.ui_internet_error_message));
+            return;
         }
+
+        setLoaderArgs(topicNumber);
+        getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
     }
+
+    private void reinitTopic(int topicNumber) {
+        setLoaderArgs(topicNumber);
+        getLoaderManager().initLoader(BASH_LOADER_ID, loaderArgs, this);
+    }
+
 
     private Bundle setLoaderArgs(int topicNumber) {
         loaderArgs = new Bundle();
@@ -220,10 +237,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onLoadFinished(Loader<String> loader, String data) {
 
         if(loader==null){
-            Log.d(Constants.LOGTAG,"Null Loader in Main Activity");
+            Log.d(Constants.LOGTAG, "Null Loader in Main Activity");
             return;
         }
 
+        // todo обработка комикса
         showBashPage(Parser.convert(data));
     }
 
@@ -238,16 +256,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
 
-    // ..........................................................................
-    private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
-        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
-    }
-
 
     //  Drawer ..........................................................................
+
 
     private void setupDrawer() {
         drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
@@ -266,26 +277,52 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-
-
-
     private class DrawerItemClickListener implements android.widget.AdapterView.OnItemClickListener {
-       @Override
+
+        @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
            drawerListView.setItemChecked(position, true);
-           loadTopic(position);
 
-           if(!isStaticDrawer)
+            loadQuotesOrComics(position);
+
+            if(!isStaticDrawer)
                drawerLayout.closeDrawer(drawer);
         }
     }
 
+    private void loadQuotesOrComics(int position) {
 
+        if(BashMenu.getType(position) == BashPageType.Comics)
+        {
+            showMessage("Show Comics - menu position " + position);
 
+            showComics(true);
+        }
+        else {
+            showComics(false);
+            loadTopic(position);
+        }
+    }
 
+    private void showComics(boolean isShowComic) {
+        if(isShowComic){
+            comicsLayout.setVisibility(View.VISIBLE);
+        }
+        else{
+            comicsLayout.setVisibility(View.GONE);
+        }
+    }
     // ..........................................................................
+
     private void showMessage(String message){
         Snackbar.make(listViewBashQuotes, message, Snackbar.LENGTH_LONG).show();
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
 }
