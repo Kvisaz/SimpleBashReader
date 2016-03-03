@@ -42,9 +42,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     // todo 9 - комиксы
 
-    // todo легкий фикс1 - при обратном повороте лоадер обращается к серверу (при первом нет), надо чтобы не делал
 
-    boolean isStaticDrawer;
+    private boolean isStaticDrawer;
+    private boolean needReload;
 
     private ListView drawerListView;
     private View drawer;
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         // fix for orientation change
         // http://stackoverflow.com/questions/10170481/loader-can-not-be-restarted-after-orientation-changed
         // just to initialize it
-        this.getLoaderManager();
+        getLoaderManager();
 
         setupBar();
         setupDrawer();
@@ -103,9 +103,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onRestoreInstanceState(savedInstanceState);
         topicUsed = savedInstanceState.getInt(Constants.SAVEDSTATE_TOPIC);
 
-        // title and page
         showQuotesOrComics(topicUsed);
-
     }
 
     private void setupOutputView() {
@@ -132,24 +130,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void setupBar() {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        getSupportActionBar().setTitle(BashMenu.getTitle(topicUsed));
-
-        // не работает само по себе - см. https://code.google.com/p/android/issues/detail?id=77763
-        //  toolbar.setTitle(BashMenu.getTitle(topicUsed));
-
-        if(!isStaticDrawer){
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setHomeButtonEnabled(true);
-        }
-
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 drawerLayout.openDrawer(GravityCompat.START);
             }
         });
+
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle(BashMenu.getTitle(topicUsed));
+        // обращение через Toolbar toolbar глючит
+        // возможное объяснение - см. https://code.google.com/p/android/issues/detail?id=77763
+
+        if(!isStaticDrawer){
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setHomeButtonEnabled(true);
+        }
+
 
     }
 
@@ -163,25 +160,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
-
         if (id == R.id.action_refresh) {
             showMessage(getString(R.string.action_refresh_message));
-            restartBashLoader(topicUsed);
+            needReload = true;
+            startBashLoader(topicUsed);
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
     // show content .....................................................................
     private void showBashPage(BashPage bashPage){
-
         if(bashPage==null){
             showMessage(getResources().getString(R.string.ui_server_error_message));
             return;
         }
-
         topicUsed = topicCurrent;
         refreshQuotes(bashPage);
     }
@@ -202,21 +195,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     //  Loader ..........................................................................
-    private void restartBashLoader(int topicNumber) {
+    private void startBashLoader(int topicNumber) {
        if(!isNetworkAvailable()) {
             showMessage(getResources().getString(R.string.ui_internet_error_message));
             return;
         }
-
         setLoaderArgs(topicNumber);
-        getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+        if(needReload){
+            getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+            needReload = false;
+        }
+        else{
+            getLoaderManager().initLoader(BASH_LOADER_ID, loaderArgs, this);
+        }
 
     }
 
-    private void reinitTopic(int topicNumber) {
-        setLoaderArgs(topicNumber);
-        getLoaderManager().initLoader(BASH_LOADER_ID, loaderArgs, this);
-    }
+
 
     private Bundle setLoaderArgs(int topicNumber) {
         loaderArgs = new Bundle();
@@ -235,13 +230,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     @Override
     public void onLoadFinished(Loader<String> loader, String data) {
-
         if(loader==null){
-            Log.d(Constants.LOGTAG, "Null Loader in Main Activity");
+            log("Null Loader in Main Activity");
             return;
         }
-
-        // todo обработка комикса
         showBashPage(Parser.convert(data));
     }
 
@@ -249,7 +241,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onLoaderReset(Loader<String> loader) {
         switch(loader.getId()){
             case(BASH_LOADER_ID):
-                Log.d(Constants.LOGTAG, "Sample Loader Reset");
+                log("Sample Loader Reset");
                 break;
         }
     }
@@ -258,11 +250,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     //  Drawer ..........................................................................
 
     private void setupDrawer() {
-
-
-
         drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
-
         drawer = findViewById(R.id.drawerLayout);
 
         drawerListView = (ListView)findViewById(R.id.drawerListView);
@@ -283,6 +271,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             drawerListView.setItemChecked(position, true);
+
+            needReload = true;
             showQuotesOrComics(position);
 
             if(!isStaticDrawer) {
@@ -295,12 +285,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     // ..........................................................................
     private void showQuotesOrComics(int topicNumber) {
         topicCurrent = topicNumber;
-
-        log("showQuotesOrComics...........");
-        log("topicCurrent = "+topicCurrent);
-
         getSupportActionBar().setTitle(BashMenu.getTitle(topicCurrent));
 
+        // обращение через toolbar глючит, хоть тресни
+        // toolbar.setTitle(BashMenu.getTitle(topicCurrent));
         if(BashMenu.getType(topicNumber) == BashPageType.Comics)
         {
             showMessage("Show Comics - menu position " + topicNumber);
@@ -313,9 +301,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void loadTopic(int topicNumber){
-        log("loadTopic...........");
         topicCurrent = topicNumber;
-        restartBashLoader(topicNumber);
+        startBashLoader(topicNumber);
     }
 
     private void showComicsView(boolean isShowComic) {
