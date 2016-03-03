@@ -33,19 +33,16 @@ import ru.kvisaz.bashreader.parser.Parser;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo 3.5 - адаптация к поворотам экрана
+    // todo 3 - навигация по страницам
 
-    // todo 2 - обновление титла только после загрузки (если произошла загрузка)
-
-     // todo 3 - навигация по страницам
-
-    // todo 4  - можно ли подключить Spanned к адаптеру?
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
     // todo 7  - получаем страницы из БД
     // todo 8 - навигация по страницам (если нет в БД - обращаемся в онлайн с уведомлением)
 
     // todo 9 - комиксы
+
+    // todo легкий фикс1 - при обратном повороте лоадер обращается к серверу (при первом нет), надо чтобы не делал
 
     boolean isStaticDrawer;
 
@@ -73,20 +70,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
         isStaticDrawer = getResources().getBoolean(R.bool.w820dp);
 
+        // fix for orientation change
+        // http://stackoverflow.com/questions/10170481/loader-can-not-be-restarted-after-orientation-changed
+        // just to initialize it
+        this.getLoaderManager();
+
         setupBar();
         setupDrawer();
-
-       // todo 20 - отделить настройку адаптера от вывода страниц
-        setupListViewQuotes();
+        setupOutputView();
 
         if (savedInstanceState == null)
         {
-            loadTopic(topicUsed);
+            showQuotesOrComics(topicUsed);
         }
     }
 
@@ -96,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putInt(Constants.SAVEDSTATE_TOPIC, topicUsed);
         super.onSaveInstanceState(savedInstanceState);
+
     }
 
     @Override
@@ -103,10 +103,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onRestoreInstanceState(savedInstanceState);
         topicUsed = savedInstanceState.getInt(Constants.SAVEDSTATE_TOPIC);
 
-        reinitTopic(topicUsed);
+        // title and page
+        showQuotesOrComics(topicUsed);
+
     }
 
-    private void setupListViewQuotes() {
+    private void setupOutputView() {
         listViewBashQuotes = (ListView) findViewById(R.id.listOfBashQuotes);
         comicsLayout = (LinearLayout) findViewById(R.id.comicsLayout);
         comicsLayout.setSaveEnabled(true);
@@ -116,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void setupListViewAdapter(ListView listView) {
         int itemViewId = R.layout.quote;
-        currentQuotes = AdapterDataFactory.getData(new BashPageTest1());
+        currentQuotes = AdapterDataFactory.getData(new BashPage()); // no quotes yet
         adapter = new SimpleAdapter(this,
                 currentQuotes,
                 itemViewId,
@@ -131,6 +133,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void setupBar() {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        getSupportActionBar().setTitle(BashMenu.getTitle(topicUsed));
+
+        // не работает само по себе - см. https://code.google.com/p/android/issues/detail?id=77763
+        //  toolbar.setTitle(BashMenu.getTitle(topicUsed));
 
         if(!isStaticDrawer){
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -175,9 +182,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             return;
         }
 
-        // https://code.google.com/p/android/issues/detail?id=77763
-        getSupportActionBar().setTitle(BashMenu.getTitle(topicCurrent));
-
         topicUsed = topicCurrent;
         refreshQuotes(bashPage);
     }
@@ -197,11 +201,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         adapter.notifyDataSetChanged();
     }
 
-    private void loadTopic(int topicNumber){
-        topicCurrent = topicNumber;
-        restartBashLoader(topicNumber);
-    }
-
     //  Loader ..........................................................................
     private void restartBashLoader(int topicNumber) {
        if(!isNetworkAvailable()) {
@@ -211,6 +210,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setLoaderArgs(topicNumber);
         getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
+
     }
 
     private void reinitTopic(int topicNumber) {
@@ -218,12 +218,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         getLoaderManager().initLoader(BASH_LOADER_ID, loaderArgs, this);
     }
 
-
     private Bundle setLoaderArgs(int topicNumber) {
         loaderArgs = new Bundle();
         loaderArgs.putInt(BashMenu.bundleStringName, topicNumber);
-        return null;
+        return loaderArgs;
     }
+
 
     @Override
     public Loader<String> onCreateLoader(int loaderId, Bundle args) {
@@ -245,7 +245,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         showBashPage(Parser.convert(data));
     }
 
-
     @Override
     public void onLoaderReset(Loader<String> loader) {
         switch(loader.getId()){
@@ -256,11 +255,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
 
-
     //  Drawer ..........................................................................
 
-
     private void setupDrawer() {
+
+
+
         drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
 
         drawer = findViewById(R.id.drawerLayout);
@@ -277,34 +277,48 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+
     private class DrawerItemClickListener implements android.widget.AdapterView.OnItemClickListener {
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-           drawerListView.setItemChecked(position, true);
+            drawerListView.setItemChecked(position, true);
+            showQuotesOrComics(position);
 
-            loadQuotesOrComics(position);
-
-            if(!isStaticDrawer)
-               drawerLayout.closeDrawer(drawer);
+            if(!isStaticDrawer) {
+                drawerLayout.closeDrawer(drawer);
+            }
         }
+
     }
 
-    private void loadQuotesOrComics(int position) {
+    // ..........................................................................
+    private void showQuotesOrComics(int topicNumber) {
+        topicCurrent = topicNumber;
 
-        if(BashMenu.getType(position) == BashPageType.Comics)
+        log("showQuotesOrComics...........");
+        log("topicCurrent = "+topicCurrent);
+
+        getSupportActionBar().setTitle(BashMenu.getTitle(topicCurrent));
+
+        if(BashMenu.getType(topicNumber) == BashPageType.Comics)
         {
-            showMessage("Show Comics - menu position " + position);
-
-            showComics(true);
+            showMessage("Show Comics - menu position " + topicNumber);
+            showComicsView(true);
         }
         else {
-            showComics(false);
-            loadTopic(position);
+            showComicsView(false);
+            loadTopic(topicNumber);
         }
     }
 
-    private void showComics(boolean isShowComic) {
+    private void loadTopic(int topicNumber){
+        log("loadTopic...........");
+        topicCurrent = topicNumber;
+        restartBashLoader(topicNumber);
+    }
+
+    private void showComicsView(boolean isShowComic) {
         if(isShowComic){
             comicsLayout.setVisibility(View.VISIBLE);
         }
@@ -312,10 +326,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             comicsLayout.setVisibility(View.GONE);
         }
     }
-    // ..........................................................................
 
     private void showMessage(String message){
         Snackbar.make(listViewBashQuotes, message, Snackbar.LENGTH_LONG).show();
+    }
+
+    private void log(String message) {
+        Log.d(Constants.LOGTAG,message);
     }
 
     private boolean isNetworkAvailable() {
