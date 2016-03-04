@@ -5,10 +5,11 @@ package ru.kvisaz.bashreader.model;
  */
 public class BashMenu {
 
-    public static final String bundleStringName = "menuTitle";
+    public static final String bundleTopicTag = "topic";
+    public static final String bundlePageTag = "pagecode";
 
     public static final BashTopic[] items = {
-            new BashTopic(0,BashPageType.LastPage,"Свежие"),
+            new BashTopic(0,BashPageType.Page,"Свежие"),
             new BashTopic(1,BashPageType.Random,"Случайные"),
             new BashTopic(2,BashPageType.ByRating,"По рейтингу"),
             new BashTopic(3,BashPageType.Abyss,"Бездна"),
@@ -30,6 +31,7 @@ public class BashMenu {
     public static BashPageType getType(int topicNumber) {
         return items[topicNumber].type;
     }
+
 
     public static String getTitle(int topicNumber) {
         return items[topicNumber].title;

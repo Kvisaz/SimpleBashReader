@@ -33,8 +33,8 @@ import ru.kvisaz.bashreader.parser.Parser;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-    // todo 3 - навигация по страницам
-
+     // todo 3 - навигация по страницам
+    //          + нужна функция
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
     // todo 7  - получаем страницы из БД
@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     Toolbar toolbar;
 
     LinearLayout comicsLayout;
+    LinearLayout quotesLayout;
 
     ListView listViewBashQuotes;
     SimpleAdapter adapter;
@@ -71,7 +72,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         isStaticDrawer = getResources().getBoolean(R.bool.w820dp);
 
         // fix for orientation change
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if (savedInstanceState == null)
         {
-            showQuotesOrComics(topicUsed);
+            switchTopic(topicUsed);
         }
     }
 
@@ -102,14 +102,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         topicUsed = savedInstanceState.getInt(Constants.SAVEDSTATE_TOPIC);
-
-        showQuotesOrComics(topicUsed);
+        switchTopic(topicUsed);
     }
 
+
+
+    // Setup ..................................................................
     private void setupOutputView() {
         listViewBashQuotes = (ListView) findViewById(R.id.listOfBashQuotes);
         comicsLayout = (LinearLayout) findViewById(R.id.comicsLayout);
-        comicsLayout.setSaveEnabled(true);
+        quotesLayout = (LinearLayout)findViewById(R.id.quotesLayout);
 
         setupListViewAdapter(listViewBashQuotes);
     }
@@ -124,9 +126,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 AdapterMapping.to);
         listView.setAdapter(adapter);
     }
-
-
-
 
     private void setupBar() {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -150,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
-
+    // Menu ..................................................................
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -163,13 +162,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (id == R.id.action_refresh) {
             showMessage(getString(R.string.action_refresh_message));
             needReload = true;
-            startBashLoader(topicUsed);
+            startBashLoader(topicUsed,"");
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    // show content .....................................................................
+    // Show content .....................................................................
     private void showBashPage(BashPage bashPage){
         if(bashPage==null){
             showMessage(getResources().getString(R.string.ui_server_error_message));
@@ -195,12 +194,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     //  Loader ..........................................................................
-    private void startBashLoader(int topicNumber) {
-       if(!isNetworkAvailable()) {
+    private void startBashLoader(int topicNumber, String pagecode)
+    {
+        if(pagecode==null) pagecode="";
+
+        if(!isNetworkAvailable()) {
             showMessage(getResources().getString(R.string.ui_internet_error_message));
             return;
         }
-        setLoaderArgs(topicNumber);
+
+        Bundle loaderArgs = new Bundle();
+        loaderArgs.putInt(BashMenu.bundleTopicTag, topicNumber);
+        loaderArgs.putString(BashMenu.bundlePageTag, pagecode);
+
         if(needReload){
             getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
             needReload = false;
@@ -208,24 +214,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         else{
             getLoaderManager().initLoader(BASH_LOADER_ID, loaderArgs, this);
         }
-
     }
 
 
-
-    private Bundle setLoaderArgs(int topicNumber) {
-        loaderArgs = new Bundle();
-        loaderArgs.putInt(BashMenu.bundleStringName, topicNumber);
-        return loaderArgs;
-    }
 
 
     @Override
     public Loader<String> onCreateLoader(int loaderId, Bundle args) {
-        int topicNumber = args.getInt(BashMenu.bundleStringName);
+        int topicNumber = args.getInt(BashMenu.bundleTopicTag);
         BashPageType type = BashMenu.getType(topicNumber);
-        int pageId = 0;
-        return new LoaderBash(this,pageId,type);
+
+        String pageCode = args.getString(BashMenu.bundlePageTag);
+
+        return new LoaderBash(this,type,pageCode);
     }
 
     @Override
@@ -248,7 +249,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     //  Drawer ..........................................................................
-
     private void setupDrawer() {
         drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
         drawer = findViewById(R.id.drawerLayout);
@@ -267,13 +267,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private class DrawerItemClickListener implements android.widget.AdapterView.OnItemClickListener {
-
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             drawerListView.setItemChecked(position, true);
 
             needReload = true;
-            showQuotesOrComics(position);
+
+            switchTopic(position);
 
             if(!isStaticDrawer) {
                 drawerLayout.closeDrawer(drawer);
@@ -282,13 +282,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     }
 
-    // ..........................................................................
-    private void showQuotesOrComics(int topicNumber) {
+    // Switch to Topic..................................................................
+    private void switchTopic(int topicNumber) {
         topicCurrent = topicNumber;
-        getSupportActionBar().setTitle(BashMenu.getTitle(topicCurrent));
 
+        getSupportActionBar().setTitle(BashMenu.getTitle(topicNumber));
         // обращение через toolbar глючит, хоть тресни
         // toolbar.setTitle(BashMenu.getTitle(topicCurrent));
+
         if(BashMenu.getType(topicNumber) == BashPageType.Comics)
         {
             showMessage("Show Comics - menu position " + topicNumber);
@@ -296,24 +297,28 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
         else {
             showComicsView(false);
-            loadTopic(topicNumber);
+            startBashLoader(topicNumber,null);
         }
     }
 
-    private void loadTopic(int topicNumber){
-        topicCurrent = topicNumber;
-        startBashLoader(topicNumber);
-    }
 
     private void showComicsView(boolean isShowComic) {
         if(isShowComic){
             comicsLayout.setVisibility(View.VISIBLE);
+            quotesLayout.setVisibility(View.GONE);
+
         }
         else{
             comicsLayout.setVisibility(View.GONE);
+            quotesLayout.setVisibility(View.VISIBLE);
         }
     }
 
+    // Switch to Page in Topic..............................................................
+    private void switchPage(String pagecode) {
+
+    }
+    // ..........................................................................
     private void showMessage(String message){
         Snackbar.make(listViewBashQuotes, message, Snackbar.LENGTH_LONG).show();
     }

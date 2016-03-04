@@ -8,27 +8,27 @@ import ru.kvisaz.bashreader.model.BashPageType;
 import ru.kvisaz.bashreader.rest.Client;
 
 public class LoaderBash extends LoaderBase {
-    private int pageId;
+    private String pageCode; // id or date
     BashPageType pageType;
 
-    public LoaderBash(Context context, int pageId, BashPageType pageType) {
-        super(context);
-        this.pageId = pageId;
-        this.pageType = pageType;
 
+    public LoaderBash(Context context, BashPageType pageType, String pageCode){
+        super(context);
+        this.pageCode = pageCode;
+        this.pageType = pageType;
     }
 
     @Override
     protected String clientResponse() throws IOException {
         switch(pageType){
             case LastPage:
-                return Client.getPage(pageId);
+                return Client.getPage("");
             case Page:
-                return Client.getPage(pageId);
+                return Client.getPage(pageCode);
             case Random:
                 return Client.getRandom();
             case ByRating:
-                return Client.getByRating();
+                return Client.getByRating(pageCode);
             case Best:
                 return Client.getBest();
             case Abyss:
@@ -36,9 +36,11 @@ public class LoaderBash extends LoaderBase {
             case AbyssTop:
                 return Client.getAbyssTop();
             case AbyssBest:
-                return Client.getAbyssBestLast();
+                return Client.getAbyssBest(pageCode);
+            case Comics:
+                return Client.getComics(pageCode);
             default:
-                return Client.getLastPage();
+                return Client.getPage("");
         }
 
     }

@@ -6,11 +6,8 @@ import retrofit2.http.GET;
 import retrofit2.http.Path;
 
 public interface RestAPI {
-    @GET("/")
-    Call<ResponseBody> loadLastPage();
-
     @GET("index/{pageid}")
-    Call<ResponseBody> loadPage(@Path("pageid") int pageId);
+    Call<ResponseBody> loadPage(@Path("pageid") String pageid);
 
     @GET("random")
     Call<ResponseBody> loadRandom();
@@ -18,11 +15,8 @@ public interface RestAPI {
     @GET("best")
     Call<ResponseBody> loadBest();
 
-    @GET("byrating")
-    Call<ResponseBody> loadByRatingLast();
-
     @GET("byrating/{pagenumber}")
-    Call<ResponseBody> loadByRatingLast(@Path("pagenumber") int pageNumber);
+    Call<ResponseBody> loadByRating(@Path("pagenumber") String pageNumber);
 
     @GET("abyss")
     Call<ResponseBody> loadAbyss();
@@ -33,17 +27,13 @@ public interface RestAPI {
     @GET("abyssbest/{date}")
     Call<ResponseBody> loadAbyssByDate(@Path("date") String date);
 
-    @GET("abyssbest")
-    Call<ResponseBody> loadAbyssBestLast();
+    @GET("comics/{datecode}")
+    Call<ResponseBody> loadComics(@Path("datecode") String datecode);
 
-   /* @GET("comics")
-    Call<ResponseBody> loadLastComics();
-
-    @GET("comics/{id}")
-    Call<ResponseBody> loadComics(@Path("id") int comicsId);
-
+    /*
     @GET("rss/")
-    Call<ResponseBody> loadRSS();*/
+    Call<ResponseBody> loadRSS();
+    */
 
 
 }

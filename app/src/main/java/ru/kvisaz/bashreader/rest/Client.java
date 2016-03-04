@@ -18,17 +18,9 @@ public class Client {
 
     public static final String charset = "windows-1251";
 
-    public static String getPage(int pageId) throws IOException {
-        String code="";
-        if(pageId<=0)
-            code = grab(RetrofitFactory.getApiService().loadLastPage());
-        else
-            code = grab(RetrofitFactory.getApiService().loadPage(pageId));
-        return code;
-    }
-
-    public static String getLastPage() throws IOException {
-        return getPage(0);
+    public static String getPage(String pageCode) throws IOException
+    {
+      return grab(RetrofitFactory.getApiService().loadPage(pageCode));
     }
 
     public static String getRandom() throws IOException{
@@ -39,12 +31,8 @@ public class Client {
         return grab(RetrofitFactory.getApiService().loadBest());
     }
 
-    public static String getByRating() throws IOException{
-        return grab(RetrofitFactory.getApiService().loadByRatingLast());
-    }
-
-    public static String getByRating(int pageNumber) throws IOException{
-        return grab(RetrofitFactory.getApiService().loadByRatingLast(pageNumber));
+    public static String getByRating(String pageCode) throws IOException{
+        return grab(RetrofitFactory.getApiService().loadByRating(pageCode));
     }
 
     public static String getAbyss() throws IOException{
@@ -55,12 +43,12 @@ public class Client {
         return grab(RetrofitFactory.getApiService().loadAbyssTop());
     }
 
-    public static String getAbyssBestLast() throws IOException{
-        return grab(RetrofitFactory.getApiService().loadAbyssBestLast());
+    public static String getAbyssBest(String bashDate) throws IOException {
+        return grab(RetrofitFactory.getApiService().loadAbyssByDate(bashDate));
     }
 
-    public static String getAbyssBestByDate(String bashDate) throws IOException {
-        return grab(RetrofitFactory.getApiService().loadAbyssByDate(bashDate));
+    public static String getComics(String comicsDate) throws IOException{
+        return grab(RetrofitFactory.getApiService().loadComics(comicsDate));
     }
 
     //  Client common functions

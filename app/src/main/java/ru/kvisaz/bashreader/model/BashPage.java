@@ -10,6 +10,10 @@ public class BashPage {
     int lastIndex;
     BashPageType type;
 
+    public String currentPage; // number or datecode of current page
+    public String prevPage; // number or datecode of previous page
+    public String nextPage; // number or datecode of next page
+
     public HashMap<Integer,BashPageType> topicMap;
 
     public BashPage(){
