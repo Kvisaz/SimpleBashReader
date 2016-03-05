@@ -18,11 +18,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 
 import ru.kvisaz.bashreader.adapter.*;
@@ -33,8 +37,14 @@ import ru.kvisaz.bashreader.parser.Parser;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
-     // todo 3 - навигация по страницам
+    // did 3 - навигация по страницам
     //          + нужна функция
+    //          +  извлекаем pagecode из страницы в Parser
+    //          + дизайн кнопок страниц в quotes_main.xml
+    //          + включаем-выключаем кнопки в зависимости от наличия страниц
+    //          + передаем параметр страницы и обновляем её
+
+
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
     // todo 7  - получаем страницы из БД
@@ -54,10 +64,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private int topicUsed;
     private int topicCurrent;
 
+    private BashPageType pageType;
+    private String pageCode;
+
     Toolbar toolbar;
 
     LinearLayout comicsLayout;
     LinearLayout quotesLayout;
+
+    Button btPrev;
+    String btPrevCode;
+    Button btCurrent;
+    String btCurrentCode;
+    Button btNext;
+    String btNextCode;
 
     ListView listViewBashQuotes;
     SimpleAdapter adapter;
@@ -81,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         setupBar();
         setupDrawer();
+        setupPager();
         setupOutputView();
 
         if (savedInstanceState == null)
@@ -168,6 +189,96 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
+    // Pager ..................................................................
+    private void setupPager(){
+        btPrev = (Button)findViewById(R.id.btPrev);
+        btCurrent = (Button)findViewById(R.id.btCurrent);
+        btNext = (Button)findViewById(R.id.btNext);
+
+        btPrevCode = "";
+        btCurrentCode = "";
+        btNextCode = "";
+
+        btPrev.setEnabled(false);
+        btCurrent.setEnabled(true);
+        btNext.setEnabled(false);
+
+        View.OnClickListener pagerListener = new PagerListener();
+        btPrev.setOnClickListener(pagerListener);
+        btCurrent.setOnClickListener(pagerListener);
+        btNext.setOnClickListener(pagerListener);
+    }
+
+    private void setPagerButtons(String prevCode,String currentCode,String nextCode){
+        if(prevCode.length()<1){
+            btPrevCode = "";
+            btPrev.setText("");
+            btPrev.setEnabled(false);
+        }
+        else{
+            btPrevCode = prevCode;
+            btPrev.setText(getPagerButtonTitle(prevCode));
+            btPrev.setEnabled(true);
+        }
+
+        if(currentCode.length()<1) {
+            btCurrentCode = "";
+            btCurrent.setText(getString(R.string.pager_current_default));
+        }
+        else{
+            btCurrentCode=currentCode;
+            btCurrent.setText(getPagerButtonTitle(currentCode));
+        }
+
+        if(nextCode.length()<1){
+            btNextCode = "";
+            btNext.setText("");
+            btNext.setEnabled(false);
+        }
+        else{
+            btNextCode = nextCode;
+            btNext.setText(getPagerButtonTitle(nextCode));
+            btNext.setEnabled(true);
+        }
+    }
+
+    private String getPagerButtonTitle(String pageCode) {
+        String title = pageCode;
+        if(pageType==BashPageType.AbyssBest){
+            try {
+                Date date = new SimpleDateFormat("yyyyMMdd").parse(pageCode);
+                title = new SimpleDateFormat("dd.MM.yyyy").format(date);
+            } catch (ParseException e) {
+                e.printStackTrace();
+                return title;
+            }
+        }
+
+        return title;
+    }
+
+    private class PagerListener implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            needReload = true;
+            int id = v.getId();
+            switch (id){
+                case R.id.btPrev:
+                    showMessage(getString(R.string.pager_prev_message)+" "+getPagerButtonTitle(btPrevCode));
+                    switchPage(btPrevCode);
+                    break;
+                case R.id.btCurrent:
+                    showMessage(getString(R.string.action_refresh_message)+" "+getPagerButtonTitle(btCurrentCode));
+                    switchPage(null);
+                    break;
+                case R.id.btNext:
+                    showMessage(getString(R.string.pager_next_message)+" "+getPagerButtonTitle(btNextCode));
+                    switchPage(btNextCode);
+                    break;
+            }
+        }
+    }
+
     // Show content .....................................................................
     private void showBashPage(BashPage bashPage){
         if(bashPage==null){
@@ -175,6 +286,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             return;
         }
         topicUsed = topicCurrent;
+
+        setPagerButtons(bashPage.prevPage, bashPage.currentPage, bashPage.nextPage);
+//        showMessage(" " + bashPage.prevPage + " <- " + bashPage.currentPage + " -> " + bashPage.nextPage);
         refreshQuotes(bashPage);
     }
 
@@ -198,6 +312,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     {
         if(pagecode==null) pagecode="";
 
+        this.pageCode = pagecode;
+        this.pageType = BashMenu.getType(topicNumber);
+
         if(!isNetworkAvailable()) {
             showMessage(getResources().getString(R.string.ui_internet_error_message));
             return;
@@ -205,7 +322,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         Bundle loaderArgs = new Bundle();
         loaderArgs.putInt(BashMenu.bundleTopicTag, topicNumber);
-        loaderArgs.putString(BashMenu.bundlePageTag, pagecode);
+        loaderArgs.putString(BashMenu.bundlePageCodeTag, pagecode);
 
         if(needReload){
             getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
@@ -224,8 +341,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         int topicNumber = args.getInt(BashMenu.bundleTopicTag);
         BashPageType type = BashMenu.getType(topicNumber);
 
-        String pageCode = args.getString(BashMenu.bundlePageTag);
-
+        String pageCode = args.getString(BashMenu.bundlePageCodeTag);
         return new LoaderBash(this,type,pageCode);
     }
 
@@ -235,7 +351,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             log("Null Loader in Main Activity");
             return;
         }
-        showBashPage(Parser.convert(data));
+
+        BashPage page = Parser.convert(data, pageType, pageCode);
+        showBashPage(page);
     }
 
     @Override
@@ -290,17 +408,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         // обращение через toolbar глючит, хоть тресни
         // toolbar.setTitle(BashMenu.getTitle(topicCurrent));
 
-        if(BashMenu.getType(topicNumber) == BashPageType.Comics)
+        if(BashMenu.getType(topicCurrent) == BashPageType.Comics)
         {
-            showMessage("Show Comics - menu position " + topicNumber);
+            showMessage("Show Comics - menu position " + topicCurrent);
             showComicsView(true);
         }
         else {
             showComicsView(false);
-            startBashLoader(topicNumber,null);
+            startBashLoader(topicCurrent, null);
         }
     }
-
 
     private void showComicsView(boolean isShowComic) {
         if(isShowComic){
@@ -314,9 +431,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-    // Switch to Page in Topic..............................................................
-    private void switchPage(String pagecode) {
-
+    // Switch to Page..................................................................
+    private void switchPage(String pageCode) {
+        startBashLoader(topicUsed, pageCode);
     }
     // ..........................................................................
     private void showMessage(String message){
@@ -333,5 +450,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
+
 
 }

@@ -6,7 +6,7 @@ package ru.kvisaz.bashreader.model;
 public class BashMenu {
 
     public static final String bundleTopicTag = "topic";
-    public static final String bundlePageTag = "pagecode";
+    public static final String bundlePageCodeTag = "pagecode";
 
     public static final BashTopic[] items = {
             new BashTopic(0,BashPageType.Page,"Свежие"),

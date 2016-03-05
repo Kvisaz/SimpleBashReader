@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:style="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/pagerLayout"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+
+    <Button
+        style="@style/PagerButton"
+        android:id="@+id/btPrev"
+        android:text="Prev"
+        />
+
+    <Button
+        style="@style/PagerButton"
+        android:id="@+id/btCurrent"
+        android:text="Current"
+        />
+
+    <Button
+        style="@style/PagerButton"
+        android:id="@+id/btNext"
+        android:text="Next"
+        />
+
+
+
+</LinearLayout>

@@ -11,13 +11,16 @@ public class BashPage {
     BashPageType type;
 
     public String currentPage; // number or datecode of current page
-    public String prevPage; // number or datecode of previous page
-    public String nextPage; // number or datecode of next page
+    public String prevPage; // number or datecode of previous page (NEWER)
+    public String nextPage; // number or datecode of next page   (OLDER)
 
     public HashMap<Integer,BashPageType> topicMap;
 
     public BashPage(){
         quotes = new ArrayList<>();
+        currentPage = "";
+        prevPage = "";
+        nextPage = "";
     }
 
     public ArrayList<BashQuote> getQuotes(){ return quotes; }

@@ -9,6 +9,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import ru.kvisaz.bashreader.model.BashPage;
+import ru.kvisaz.bashreader.model.BashPageType;
 import ru.kvisaz.bashreader.model.BashQuote;
 import ru.kvisaz.bashreader.Constants;
 
@@ -25,44 +26,177 @@ import ru.kvisaz.bashreader.Constants;
 public class Parser {
 
     private final static String RAW_QUOTE_QUERY = "div.quote";
-    /*
-    *      bash.im в этом блоке выдает цитаты и рекламные баннеры, от которых делаем защиту
-    * */
-
     private final static String RATING_QUERY = "span.rating";
     private final static String DATE_QUERY = "span.date";
     private final static String ID_QUERY = "a.id";
     private final static String TEXT_QUERY = "div.text";
+    private final static String PAGER_QUERY = "div.pager";
+    private static final String PAGER_COMICS_QUERY = "div.thumbs";
+
 
     private static String cachedHtml;
-    private static BashPage cachedPage;
+    private static BashPage bashPage;
+    private static Document document;
 
-    public static BashPage convert(String rawHtml)
+    private static BashPageType pageType;
+    private static String pageCode;
+
+    public static BashPage convert(String rawHtml, BashPageType aPageType, String aPageCode)
     {
         if(rawHtml==null) return null;
 
-        if(cachedHtml!=null && cachedHtml.equals(rawHtml) && cachedPage!=null)
+        if(cachedHtml!=null && cachedHtml.equals(rawHtml) && bashPage!=null)
         {
-            return cachedPage;
+            return bashPage;
         }
 
-        BashPage bashPage = new BashPage();
+        pageType = aPageType;
+        pageCode = aPageCode;
+        bashPage = new BashPage();
+        document = Jsoup.parse(rawHtml);
 
-        Document doc = Jsoup.parse(rawHtml);
-        Elements rawQuotes = doc.select(RAW_QUOTE_QUERY);
+        setupPages();
 
+        Elements rawQuotes = document.select(RAW_QUOTE_QUERY);
         for(Element rawQuote: rawQuotes){
             BashQuote quote = parseQuote(rawQuote);
             if(quote!=null)
                 bashPage.add(quote);
         }
 
-        cachedPage = bashPage;
         cachedHtml = rawHtml;
 
         return bashPage;
     }
 
+    private static void setupPages() {
+        if(pageType == BashPageType.Page
+                || pageType == BashPageType.LastPage
+                || pageType == BashPageType.ByRating
+                )
+        {
+            bashPage.currentPage = getCurrentPageBasic();
+            bashPage.nextPage = getNextPageBasic();
+            bashPage.prevPage = getPrevPageBasic();
+        }
+        else if(pageType == BashPageType.AbyssBest)
+        {
+            bashPage.currentPage = getCurrentPageAbyssBest();
+            bashPage.nextPage = getNextPageAbyssBest();
+            bashPage.prevPage = getPrevPageAbyssBest();
+
+            // в Бездне мы просто ловим первые две ссылки в пейджере,
+            // а кто из них кто - вычисляем сейчас
+            int linkAge = bashPage.currentPage.compareTo(bashPage.prevPage);
+            if(linkAge>0){
+                // сurrentPage больше prevPage (которая должна быть НОВЕЕ, т.е. БОЛЬШЕ)
+                // значит nextPage отсутствует в Бездне
+                bashPage.nextPage = bashPage.prevPage;
+                bashPage.prevPage = ""; // удаляем кандидата
+            }
+
+        }
+        else if(pageType==BashPageType.Comics)
+        {
+            bashPage.currentPage = getCurrentPageComics();
+            bashPage.nextPage = getNextPageComics();
+            bashPage.prevPage = getPrevPageComics();
+        }
+    }
+    private static String getCurrentPageBasic()
+    {
+        String pageCode = "";
+        Element pager = document.select(PAGER_QUERY).first();
+        if(pager==null) return pageCode;
+        Element pageCodeEl = pager.select("input").first();
+        if(pageCodeEl == null) return pageCode;
+
+        pageCode = pageCodeEl.val();
+        return pageCode;
+    }
+
+    private static String getCurrentPageAbyssBest()
+    {
+        String pageCode = "";
+        Element pager = document.select(PAGER_QUERY).first();
+        if(pager==null) return pageCode;
+        Element pageCodeEl = pager.select("input").first();
+        if(pageCodeEl == null) return pageCode;
+
+        pageCode = pageCodeEl.attr("data-date");
+        return pageCode;
+    }
+
+    private static String getCurrentPageComics()
+    {
+        String pageCode = "";
+        Element pager = document.select(PAGER_COMICS_QUERY).first();
+        if(pager==null) return pageCode;
+        Element pageCodeEl = pager.select(".current>a").first();
+        if(pageCodeEl==null) return pageCode;
+        pageCode = pageCodeEl.attr("href");
+        pageCode = getLastElementInUri(pageCode);
+        return pageCode;
+    }
+
+    // PrevPage .........................  .........................
+    private static String getPrevPageBasic() {
+        String pageCode = "";
+        Element el = document.select("link[rel=prev]").first();
+        if(el==null) return pageCode;
+        pageCode = el.attr("href");
+        pageCode = getLastElementInUri(pageCode);
+        return pageCode;
+    }
+
+    private static String getPrevPageAbyssBest()
+    {
+        String pageCode = "";
+        Element pager = document.select(PAGER_QUERY).first();
+        if(pager==null) return pageCode;
+
+        Element el = pager.select("a").first();
+        if(el==null) return pageCode;
+        pageCode = el.attr("href");
+        pageCode = getLastElementInUri(pageCode);
+        return pageCode;
+    }
+
+    private static String getPrevPageComics() {
+        String pageCode = "";
+
+        return pageCode;
+    }
+
+    // NextPage .........................  .........................
+    private static String getNextPageBasic() {
+        Element el = document.select("link[rel=next]").first();
+        if(el==null) return "";
+        String code = el.attr("href");
+        code = getLastElementInUri(code);
+        return code;
+    }
+
+    private static String getNextPageAbyssBest()
+    {
+        String pageCode = "";
+        Element pager = document.select(PAGER_QUERY).first();
+        if(pager==null) return pageCode;
+
+        Element el = pager.select("a").get(1);
+        if(el==null) return pageCode;
+        pageCode = el.attr("href");
+        pageCode = getLastElementInUri(pageCode);
+        return pageCode;
+    }
+
+    private static String getNextPageComics() {
+        String pageCode = "";
+
+        return pageCode;
+    }
+
+    // Quotes .........................  .........................
     private static BashQuote parseQuote(Element rawQuote) {
         @SuppressWarnings({"id","rating","text","date"})
         int id, rating;
@@ -84,7 +218,7 @@ public class Parser {
             text = textList.first().html();
             text = Html.fromHtml(text).toString(); // clean br tags
 
-            // id отсутствует у Бездны
+            // id ....
             if(idList.size()<1) { id = 0; }
             else{
                 String idStr = idList.first().attr("href");
@@ -113,9 +247,6 @@ public class Parser {
                     rating = 0;
                 }
             }
-
-
-
         }
         catch (Exception e)
         {
@@ -126,4 +257,10 @@ public class Parser {
         return new BashQuote(id,text,date,rating);
     }
 
+    private static String getLastElementInUri(String uri)
+    {
+        int start = uri.lastIndexOf("/")+1;
+        return uri.substring(start);
+    }
 }
+
