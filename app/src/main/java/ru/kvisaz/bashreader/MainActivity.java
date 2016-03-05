@@ -44,6 +44,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     //          + включаем-выключаем кнопки в зависимости от наличия страниц
     //          + передаем параметр страницы и обновляем её
 
+    // todo Polish
+    //          - выделяем текущую страницу
+    //          - значки стрелок на prev, next
+
+    //          + изначально пейджер невидим - включаем в setPagerButtons
+//              - сообщение о загрузке в startLoader
 
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
@@ -71,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     LinearLayout comicsLayout;
     LinearLayout quotesLayout;
-
+    LinearLayout pagerLayout;
     Button btPrev;
     String btPrevCode;
     Button btCurrent;
@@ -191,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     // Pager ..................................................................
     private void setupPager(){
+        pagerLayout = (LinearLayout) findViewById(R.id.pagerLayout);
         btPrev = (Button)findViewById(R.id.btPrev);
         btCurrent = (Button)findViewById(R.id.btCurrent);
         btNext = (Button)findViewById(R.id.btNext);
@@ -199,9 +206,10 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         btCurrentCode = "";
         btNextCode = "";
 
-        btPrev.setEnabled(false);
+       /* btPrev.setEnabled(false);
         btCurrent.setEnabled(true);
-        btNext.setEnabled(false);
+        btNext.setEnabled(false);*/
+
 
         View.OnClickListener pagerListener = new PagerListener();
         btPrev.setOnClickListener(pagerListener);
@@ -210,15 +218,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void setPagerButtons(String prevCode,String currentCode,String nextCode){
+        pagerLayout.setVisibility(View.VISIBLE);
         if(prevCode.length()<1){
             btPrevCode = "";
             btPrev.setText("");
-            btPrev.setEnabled(false);
+            btPrev.setVisibility(View.INVISIBLE);
         }
         else{
             btPrevCode = prevCode;
             btPrev.setText(getPagerButtonTitle(prevCode));
-            btPrev.setEnabled(true);
+            btPrev.setVisibility(View.VISIBLE);
         }
 
         if(currentCode.length()<1) {
@@ -233,12 +242,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if(nextCode.length()<1){
             btNextCode = "";
             btNext.setText("");
-            btNext.setEnabled(false);
+            btNext.setVisibility(View.INVISIBLE);
         }
         else{
             btNextCode = nextCode;
             btNext.setText(getPagerButtonTitle(nextCode));
-            btNext.setEnabled(true);
+            btNext.setVisibility(View.VISIBLE);
         }
     }
 
@@ -415,6 +424,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
         else {
             showComicsView(false);
+            showMessage(getString(R.string.action_refresh_message));
             startBashLoader(topicCurrent, null);
         }
     }

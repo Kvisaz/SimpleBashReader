@@ -4,26 +4,33 @@
     android:id="@+id/pagerLayout"
     android:orientation="horizontal"
     android:gravity="center"
+    android:visibility="gone"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    >
 
 
     <Button
         style="@style/PagerButton"
         android:id="@+id/btPrev"
         android:text="Prev"
+        android:drawableRight="@drawable/ic_action_arrow_back"
         />
 
     <Button
         style="@style/PagerButton"
+        android:textStyle="bold"
+        android:textColor="@color/colorPrimaryDark"
         android:id="@+id/btCurrent"
         android:text="Current"
+        android:layout_height="match_parent"
         />
 
     <Button
         style="@style/PagerButton"
         android:id="@+id/btNext"
         android:text="Next"
+        android:drawableLeft="@drawable/ic_action_arrow_forward"
         />
 
 
