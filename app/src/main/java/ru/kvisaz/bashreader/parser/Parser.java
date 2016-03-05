@@ -81,19 +81,11 @@ public class Parser {
         }
         else if(pageType == BashPageType.AbyssBest)
         {
-            bashPage.currentPage = getCurrentPageAbyssBest();
-            bashPage.nextPage = getNextPageAbyssBest();
-            bashPage.prevPage = getPrevPageAbyssBest();
+          //  bashPage.currentPage = getCurrentPageAbyssBest();
+            /*bashPage.nextPage = getNextPageAbyssBest();
+            bashPage.prevPage = getPrevPageAbyssBest();*/
+            setAbyssBestPages();
 
-            // в Бездне мы просто ловим первые две ссылки в пейджере,
-            // а кто из них кто - вычисляем сейчас
-            int linkAge = bashPage.currentPage.compareTo(bashPage.prevPage);
-            if(linkAge>0){
-                // сurrentPage больше prevPage (которая должна быть НОВЕЕ, т.е. БОЛЬШЕ)
-                // значит nextPage отсутствует в Бездне
-                bashPage.nextPage = bashPage.prevPage;
-                bashPage.prevPage = ""; // удаляем кандидата
-            }
 
         }
         else if(pageType==BashPageType.Comics)
@@ -103,6 +95,8 @@ public class Parser {
             bashPage.prevPage = getPrevPageComics();
         }
     }
+
+
     private static String getCurrentPageBasic()
     {
         String pageCode = "";
@@ -175,6 +169,41 @@ public class Parser {
         String code = el.attr("href");
         code = getLastElementInUri(code);
         return code;
+    }
+
+    // AbyssBest structur:  a... a input a ... a a
+    private static void setAbyssBestPages()
+    {
+        bashPage.currentPage = getCurrentPageAbyssBest();
+        String pagerHtml = document.select("div.pager").first().html(); // direct children
+
+        String[] pagerSplitHtml = pagerHtml.split("class=\"current\"");
+
+        try {
+            if (pagerSplitHtml.length == 2) { // prev and next OR current is last
+                String startTag = "abyssbest/";
+                int start = pagerSplitHtml[0].lastIndexOf(startTag);
+                if (start != -1) {
+                    start = start + startTag.length();
+                    bashPage.prevPage = pagerSplitHtml[0].substring(start, start + 8); // abyssbest/20150308
+         Log.d(Constants.LOGTAG,"....... start 0 founded " + start);
+                }
+
+                start = pagerSplitHtml[1].indexOf(startTag);
+                if (start != -1) {
+                    start = start + startTag.length();
+
+                    bashPage.nextPage = pagerSplitHtml[1].substring(start, start + 8); // abyssbest/20150308
+                    Log.d(Constants.LOGTAG,"....... start 1 founded " + bashPage.nextPage);
+                }
+
+            }
+        }
+        catch (Exception e)
+        {
+            Log.d(Constants.LOGTAG, e.toString());
+        }
+
     }
 
     private static String getNextPageAbyssBest()

@@ -5,6 +5,7 @@
         <item name="android:textSize">@dimen/topbarTextSize</item>
         <item name="android:textColor">@color/colorTextHead</item>
         <item name="android:background">@color/colorPrimaryDark</item>
+        <item name="android:gravity">center_vertical</item>
     </style>
 
     <style name="PagerButton">

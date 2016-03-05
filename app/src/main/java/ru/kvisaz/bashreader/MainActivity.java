@@ -22,6 +22,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -44,23 +45,36 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     //          + включаем-выключаем кнопки в зависимости от наличия страниц
     //          + передаем параметр страницы и обновляем её
 
-    // todo Polish
-    //          - выделяем текущую страницу
-    //          - значки стрелок на prev, next
+    // did Polish
+    //          + выделяем текущую страницу
+    //          + значки стрелок на prev, next
 
     //          + изначально пейджер невидим - включаем в setPagerButtons
-//              - сообщение о загрузке в startLoader
+//              + сообщение о загрузке в startLoader
+
+    // did BUG - btCurrent сбрасывает страницу, а не обновляет текущую
+    // did BUG - страницы Abbyss после второй слетают
+    // did Polish - при загрузке страницы, отмотать ListView вверх
+
+    // todo Polish
+    //          + лампа индикатор онлайна в заголовке Drawer
+    //          + если офлайн - желтая, если онлайн - зелёная
+    //          - офлайн режим - отключить онлайн-пункты, сообщение
+    //          - офлайн режим - оставлять активными только офлайн-часть (буд)
+    //                          - 1 пункт "проверить связь"
+
+    // todo 9 - комиксы
 
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
     // todo 7  - получаем страницы из БД
     // todo 8 - навигация по страницам (если нет в БД - обращаемся в онлайн с уведомлением)
 
-    // todo 9 - комиксы
 
 
     private boolean isStaticDrawer;
     private boolean needReload;
+    private boolean isOnline;
 
     private ListView drawerListView;
     private View drawer;
@@ -74,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private String pageCode;
 
     Toolbar toolbar;
+    TextView drawerToolbar;
 
     LinearLayout comicsLayout;
     LinearLayout quotesLayout;
@@ -90,8 +105,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     ArrayList<Map<String,Object>> currentQuotes;
 
     final int BASH_LOADER_ID = 1;
-
-    Bundle loaderArgs;
 
 
     @Override
@@ -278,7 +291,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     break;
                 case R.id.btCurrent:
                     showMessage(getString(R.string.action_refresh_message)+" "+getPagerButtonTitle(btCurrentCode));
-                    switchPage(null);
+                    switchPage(btCurrentCode);
                     break;
                 case R.id.btNext:
                     showMessage(getString(R.string.pager_next_message)+" "+getPagerButtonTitle(btNextCode));
@@ -297,7 +310,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         topicUsed = topicCurrent;
 
         setPagerButtons(bashPage.prevPage, bashPage.currentPage, bashPage.nextPage);
-//        showMessage(" " + bashPage.prevPage + " <- " + bashPage.currentPage + " -> " + bashPage.nextPage);
+        scrollQuotesToTop();
+
         refreshQuotes(bashPage);
     }
 
@@ -326,8 +340,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         if(!isNetworkAvailable()) {
             showMessage(getResources().getString(R.string.ui_internet_error_message));
+            setOnlineMode(false);
             return;
         }
+
+
+        setOnlineMode(true);
 
         Bundle loaderArgs = new Bundle();
         loaderArgs.putInt(BashMenu.bundleTopicTag, topicNumber);
@@ -342,7 +360,33 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
+    private void scrollQuotesToTop() {
+        // scroll list to begin
+        listViewBashQuotes.post(new Runnable() {
+            @Override
+            public void run() {
+                listViewBashQuotes.setSelection(0);
+            }
+        });
+    }
 
+    private void setOnlineMode(boolean online) {
+        isOnline = online;
+        String toolbarMessage = getString(R.string.app_name);
+        if(isOnline){
+            setDrawerToolbarIcon(R.drawable.ic_action_circle_green);
+            toolbarMessage = toolbarMessage + " " + getString(R.string.drawer_online_message);
+          }
+        else{
+            setDrawerToolbarIcon(R.drawable.ic_action_circle_yell);
+            toolbarMessage = toolbarMessage + " " + getString(R.string.drawer_offline_message);
+           }
+        drawerToolbar.setText(toolbarMessage);
+    }
+
+    private void setDrawerToolbarIcon(int resid) {
+        drawerToolbar.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(resid),null,null,null);
+    }
 
 
     @Override
@@ -378,6 +422,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     //  Drawer ..........................................................................
     private void setupDrawer() {
         drawerLayout = (DrawerLayout) findViewById(R.id.activity_main_drawer);
+
+        drawerToolbar = (TextView) findViewById(R.id.drawerBar);
         drawer = findViewById(R.id.drawerLayout);
 
         drawerListView = (ListView)findViewById(R.id.drawerListView);
@@ -445,6 +491,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private void switchPage(String pageCode) {
         startBashLoader(topicUsed, pageCode);
     }
+
+
     // ..........................................................................
     private void showMessage(String message){
         Snackbar.make(listViewBashQuotes, message, Snackbar.LENGTH_LONG).show();

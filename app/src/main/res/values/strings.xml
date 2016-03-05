@@ -3,11 +3,15 @@
     <string name="title_activity_nav_drawer">NavDrawerActivity</string>
 
     <string name="action_refresh">Обновить</string>
-    <string name="action_refresh_message">Обновляем страницу...</string>
+    <string name="action_refresh_message">Обновляем страницу </string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="drawer_online_message"> </string>
+    <string name="drawer_offline_message"> (оффлайн)</string>
     <string name="title_activity_drawer_">Drawer_Activity</string>
+
+
 
     <string name="ui_internet_error_message">Нет подключения к сети</string>
     <string name="ui_server_error_message">Сервер не отвечает</string>
