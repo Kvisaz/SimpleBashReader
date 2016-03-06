@@ -15,6 +15,7 @@
 
     <string name="ui_internet_error_message">Нет подключения к сети</string>
     <string name="ui_server_error_message">Сервер не отвечает</string>
+    <string name="ui_parser_comics_error_message">Не могу распознать комикс...</string>
 
     <string name="pager_current_default">Обновить</string>
     <string name="pager_prev_default">Следующее</string>

@@ -12,6 +12,7 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,10 +20,13 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+
+import com.squareup.picasso.Picasso;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -56,14 +60,17 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     // did BUG - страницы Abbyss после второй слетают
     // did Polish - при загрузке страницы, отмотать ListView вверх
 
+
+    // DID 9 - комиксы
+    //   ++  дизайн глагне
+    //   ++  ПАРСЕР пейджера
+    //   ++  загрузка картинки
+
     // todo Polish
-    //          + лампа индикатор онлайна в заголовке Drawer
-    //          + если офлайн - желтая, если онлайн - зелёная
+    //          - индикатор загрузки с анимацией
     //          - офлайн режим - отключить онлайн-пункты, сообщение
     //          - офлайн режим - оставлять активными только офлайн-часть (буд)
     //                          - 1 пункт "проверить связь"
-
-    // todo 9 - комиксы
 
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
@@ -91,7 +98,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     TextView drawerToolbar;
 
     LinearLayout comicsLayout;
+    ImageView comicsView;
+    TextView comicsAbout;
+
     LinearLayout quotesLayout;
+
     LinearLayout pagerLayout;
     Button btPrev;
     String btPrevCode;
@@ -122,6 +133,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setupDrawer();
         setupPager();
         setupOutputView();
+        setupComicsView();
 
         if (savedInstanceState == null)
         {
@@ -148,9 +160,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     // Setup ..................................................................
+    private void setupComicsView() {
+        comicsLayout = (LinearLayout) findViewById(R.id.comicsLayout);
+        comicsView = (ImageView) findViewById(R.id.comicsImageView);
+        comicsAbout = (TextView) findViewById(R.id.comicsAbout);
+    }
+
     private void setupOutputView() {
         listViewBashQuotes = (ListView) findViewById(R.id.listOfBashQuotes);
-        comicsLayout = (LinearLayout) findViewById(R.id.comicsLayout);
         quotesLayout = (LinearLayout)findViewById(R.id.quotesLayout);
 
         setupListViewAdapter(listViewBashQuotes);
@@ -218,11 +235,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         btPrevCode = "";
         btCurrentCode = "";
         btNextCode = "";
-
-       /* btPrev.setEnabled(false);
-        btCurrent.setEnabled(true);
-        btNext.setEnabled(false);*/
-
 
         View.OnClickListener pagerListener = new PagerListener();
         btPrev.setOnClickListener(pagerListener);
@@ -308,11 +320,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             return;
         }
         topicUsed = topicCurrent;
-
         setPagerButtons(bashPage.prevPage, bashPage.currentPage, bashPage.nextPage);
         scrollQuotesToTop();
 
-        refreshQuotes(bashPage);
+        if(bashPage.type==BashPageType.Comics)
+            refreshComics(bashPage);
+        else
+            refreshQuotes(bashPage);
     }
 
     private void refreshQuotes(BashPage bashPage) {
@@ -330,6 +344,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         adapter.notifyDataSetChanged();
     }
 
+    private void refreshComics(BashPage bashPage) {
+        if(bashPage.isError){
+            showMessage(bashPage.errorMessage);
+            return;
+        }
+        BashPageComics page = (BashPageComics) bashPage;
+        if(page.pictureUrl==null||page.pictureUrl.length()<1) {
+            log("Null or null length in Comics Picture Url");
+            return;
+        }
+        Picasso.with(this).load(page.pictureUrl).into(comicsView);
+        comicsAbout.setText(Html.fromHtml(page.about)); // Html in TextView trick
+    }
+
     //  Loader ..........................................................................
     private void startBashLoader(int topicNumber, String pagecode)
     {
@@ -343,7 +371,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             setOnlineMode(false);
             return;
         }
-
 
         setOnlineMode(true);
 
@@ -471,8 +498,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         else {
             showComicsView(false);
             showMessage(getString(R.string.action_refresh_message));
-            startBashLoader(topicCurrent, null);
         }
+
+        startBashLoader(topicCurrent, null);
     }
 
     private void showComicsView(boolean isShowComic) {

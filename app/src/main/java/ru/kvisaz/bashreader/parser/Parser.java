@@ -9,6 +9,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import ru.kvisaz.bashreader.model.BashPage;
+import ru.kvisaz.bashreader.model.BashPageComics;
 import ru.kvisaz.bashreader.model.BashPageType;
 import ru.kvisaz.bashreader.model.BashQuote;
 import ru.kvisaz.bashreader.Constants;
@@ -38,8 +39,6 @@ public class Parser {
     private static BashPage bashPage;
     private static Document document;
 
-    private static BashPageType pageType;
-    private static String pageCode;
 
     public static BashPage convert(String rawHtml, BashPageType aPageType, String aPageCode)
     {
@@ -50,49 +49,97 @@ public class Parser {
             return bashPage;
         }
 
-        pageType = aPageType;
-        pageCode = aPageCode;
-        bashPage = new BashPage();
+        if(aPageType==BashPageType.Comics)
+            bashPage = new BashPageComics();
+        else
+            bashPage = new BashPage();
+
+
+        bashPage.type = aPageType;
+        bashPage.currentPage = aPageCode; // can be changed
         document = Jsoup.parse(rawHtml);
 
         setupPages();
 
+        if(bashPage.type==BashPageType.Comics)
+            parseComics();
+        else
+            parseQuotes();
+
+        cachedHtml = rawHtml;
+        return bashPage;
+    }
+
+    // Comics .......................
+    private static void parseComics() {
+        BashPageComics page = (BashPageComics) bashPage;
+
+        page.pictureUrl = "";
+        page.about = "";
+        page.authorUrl = "";
+        page.quoteId = "";
+
+        Element elTmp = document.select("#cm_strip").first();
+        if(elTmp==null) {
+            page.setError("Comics No Found");
+            return;
+        }
+        page.pictureUrl = elTmp.attr("src");
+        Log.d(Constants.LOGTAG,"page.pictureUrl -- " + page.pictureUrl);
+
+        elTmp = document.select("#boiler>.backlink").first();
+        if(elTmp==null) return;
+
+        page.about = elTmp.html();
+        Log.d(Constants.LOGTAG,"page.about -- " + page.about);
+
+        elTmp = elTmp.select("a").first();
+        if(elTmp!=null){
+            page.authorUrl = elTmp.attr("href");
+        }
+
+        Log.d(Constants.LOGTAG,"page.authorUrl -- " + page.authorUrl);
+
+        int startQuote = page.about.indexOf("#")+1;
+        if(startQuote==-1 || startQuote >= page.about.length()) return;
+        page.quoteId = page.about.substring(startQuote);
+        int endQuote = page.quoteId.indexOf("<");
+        if(endQuote==-1) {
+            page.quoteId = ""; // обнуляем неудачный парсинг
+            return;
+        }
+        page.quoteId = page.quoteId.substring(0,endQuote);
+        Log.d(Constants.LOGTAG,"page.quoteId -- " + page.quoteId);
+        }
+
+
+    // Quotes.........................
+    private static void parseQuotes() {
         Elements rawQuotes = document.select(RAW_QUOTE_QUERY);
         for(Element rawQuote: rawQuotes){
             BashQuote quote = parseQuote(rawQuote);
             if(quote!=null)
                 bashPage.add(quote);
         }
-
-        cachedHtml = rawHtml;
-
-        return bashPage;
     }
 
     private static void setupPages() {
-        if(pageType == BashPageType.Page
-                || pageType == BashPageType.LastPage
-                || pageType == BashPageType.ByRating
+        if( bashPage.type == BashPageType.Page
+                ||  bashPage.type == BashPageType.LastPage
+                ||  bashPage.type == BashPageType.ByRating
                 )
         {
             bashPage.currentPage = getCurrentPageBasic();
             bashPage.nextPage = getNextPageBasic();
             bashPage.prevPage = getPrevPageBasic();
         }
-        else if(pageType == BashPageType.AbyssBest)
+        else if( bashPage.type == BashPageType.AbyssBest)
         {
-          //  bashPage.currentPage = getCurrentPageAbyssBest();
-            /*bashPage.nextPage = getNextPageAbyssBest();
-            bashPage.prevPage = getPrevPageAbyssBest();*/
             setAbyssBestPages();
-
-
         }
-        else if(pageType==BashPageType.Comics)
+        else if( bashPage.type==BashPageType.Comics)
         {
-            bashPage.currentPage = getCurrentPageComics();
-            bashPage.nextPage = getNextPageComics();
-            bashPage.prevPage = getPrevPageComics();
+            setComicsPages();
         }
     }
 
@@ -124,14 +171,18 @@ public class Parser {
     private static String getCurrentPageComics()
     {
         String pageCode = "";
-        Element pager = document.select(PAGER_COMICS_QUERY).first();
+        Element pager = document.select("div.thumbs").first();
         if(pager==null) return pageCode;
         Element pageCodeEl = pager.select(".current>a").first();
-        if(pageCodeEl==null) return pageCode;
+        if(pageCodeEl == null) return pageCode;
+
         pageCode = pageCodeEl.attr("href");
         pageCode = getLastElementInUri(pageCode);
+
         return pageCode;
     }
+
+
 
     // PrevPage .........................  .........................
     private static String getPrevPageBasic() {
@@ -143,24 +194,7 @@ public class Parser {
         return pageCode;
     }
 
-    private static String getPrevPageAbyssBest()
-    {
-        String pageCode = "";
-        Element pager = document.select(PAGER_QUERY).first();
-        if(pager==null) return pageCode;
 
-        Element el = pager.select("a").first();
-        if(el==null) return pageCode;
-        pageCode = el.attr("href");
-        pageCode = getLastElementInUri(pageCode);
-        return pageCode;
-    }
-
-    private static String getPrevPageComics() {
-        String pageCode = "";
-
-        return pageCode;
-    }
 
     // NextPage .........................  .........................
     private static String getNextPageBasic() {
@@ -171,13 +205,16 @@ public class Parser {
         return code;
     }
 
-    // AbyssBest structur:  a... a input a ... a a
+    // AbyssBest structure:  div.pager > a... a input a ... a a
     private static void setAbyssBestPages()
     {
         bashPage.currentPage = getCurrentPageAbyssBest();
-        String pagerHtml = document.select("div.pager").first().html(); // direct children
+        Element elPager = document.select("div.pager").first();
+        if(elPager == null) return;
+        String pagerHtml = elPager.html(); // direct children
 
         String[] pagerSplitHtml = pagerHtml.split("class=\"current\"");
+        final int PAGECODE_LENGTH = 8; // 20160302
 
         try {
             if (pagerSplitHtml.length == 2) { // prev and next OR current is last
@@ -185,16 +222,16 @@ public class Parser {
                 int start = pagerSplitHtml[0].lastIndexOf(startTag);
                 if (start != -1) {
                     start = start + startTag.length();
-                    bashPage.prevPage = pagerSplitHtml[0].substring(start, start + 8); // abyssbest/20150308
-         Log.d(Constants.LOGTAG,"....... start 0 founded " + start);
+                    bashPage.prevPage = pagerSplitHtml[0].substring(start, start + PAGECODE_LENGTH); // abyssbest/20150308
+
                 }
 
                 start = pagerSplitHtml[1].indexOf(startTag);
                 if (start != -1) {
                     start = start + startTag.length();
 
-                    bashPage.nextPage = pagerSplitHtml[1].substring(start, start + 8); // abyssbest/20150308
-                    Log.d(Constants.LOGTAG,"....... start 1 founded " + bashPage.nextPage);
+                    bashPage.nextPage = pagerSplitHtml[1].substring(start, start + PAGECODE_LENGTH); // abyssbest/20150308
+
                 }
 
             }
@@ -206,18 +243,46 @@ public class Parser {
 
     }
 
-    private static String getNextPageAbyssBest()
+// AbyssBest structure:  div.thumbs > a... a a.current a ... a a
+    private static void setComicsPages()
     {
-        String pageCode = "";
-        Element pager = document.select(PAGER_QUERY).first();
-        if(pager==null) return pageCode;
+        bashPage.currentPage = getCurrentPageComics();
+        Element elPager = document.select("div.thumbs").first();
+        if(elPager == null) return;
 
-        Element el = pager.select("a").get(1);
-        if(el==null) return pageCode;
-        pageCode = el.attr("href");
-        pageCode = getLastElementInUri(pageCode);
-        return pageCode;
+        String pagerHtml = elPager.html(); // direct children
+
+        String[] pagerSplitHtml = pagerHtml.split("class=\"current\"");
+
+        final int PAGECODE_LENGTH = 8; // 20160302
+
+        try {
+            if (pagerSplitHtml.length == 2) { // must be always
+                String startTag = "comics/";
+                int start = pagerSplitHtml[0].lastIndexOf(startTag);
+                if (start != -1) {
+                    start = start + startTag.length();
+                    bashPage.prevPage = pagerSplitHtml[0].substring(start, start + PAGECODE_LENGTH); // comics/20160302
+                    Log.d(Constants.LOGTAG,"bashPage.prevPage -- " + bashPage.prevPage);
+                }
+
+                start = pagerSplitHtml[1].indexOf(startTag);
+                start = pagerSplitHtml[1].indexOf(startTag,start+startTag.length()); // защита от собственного а
+                if (start != -1) {
+                    start = start + startTag.length();
+                    bashPage.nextPage = pagerSplitHtml[1].substring(start, start + PAGECODE_LENGTH); // comics/20150308
+                    Log.d(Constants.LOGTAG,"bashPage.nextPage -- " + bashPage.nextPage);
+                }
+
+            }
+        }
+        catch (Exception e)
+        {
+            Log.d(Constants.LOGTAG, e.toString());
+        }
+
     }
+
 
     private static String getNextPageComics() {
         String pageCode = "";
