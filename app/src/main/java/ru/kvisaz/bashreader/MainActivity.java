@@ -14,15 +14,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
@@ -35,12 +39,14 @@ import java.util.Date;
 import java.util.Map;
 
 import ru.kvisaz.bashreader.adapter.*;
+import ru.kvisaz.bashreader.image.ImageLoadedCallback;
 import ru.kvisaz.bashreader.model.*;
 import ru.kvisaz.bashreader.loader.LoaderBash;
 import ru.kvisaz.bashreader.parser.Parser;
+import ru.kvisaz.bashreader.swipe.Swipe;
 
 
-public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String>, View.OnTouchListener {
 
     // did 3 - навигация по страницам
     //          + нужна функция
@@ -67,10 +73,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     //   ++  загрузка картинки
 
     // todo Polish
-    //          - индикатор загрузки с анимацией
-    //          - офлайн режим - отключить онлайн-пункты, сообщение
-    //          - офлайн режим - оставлять активными только офлайн-часть (буд)
-    //                          - 1 пункт "проверить связь"
+   /*
+            - свайпы (листнул, начал загрузку - блокировал свайп, загрузил - разрешил свайп
+
+            + индикатор загрузки с анимацией Комиксы
+            + индикатор загрузки с анимацией ЦИТАТЫ
+            + выровнять страницы комикса - чтобы было как у цитат (Prev и next поменять местами
+            + красивая дата в заголовках страниц комикса
+            + дата в топе Бездны
+            + ид в топе Бездны
+            + ид в лучшем Бездны
+
+
+              - офлайн режим - отключить онлайн-пункты, сообщение
+              - офлайн режим - оставлять активными только офлайн-часть (буд)
+                              - 1 пункт "проверить связь"
+
+    */
 
     // todo 5  - создание БД
     // todo 6  - сохранение полученных страниц в БД
@@ -97,9 +116,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     Toolbar toolbar;
     TextView drawerToolbar;
 
+    FrameLayout pageFrameLayout;
+    Swipe swipe;
+
     LinearLayout comicsLayout;
     ImageView comicsView;
     TextView comicsAbout;
+    ProgressBar progressBar;
 
     LinearLayout quotesLayout;
 
@@ -132,8 +155,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setupBar();
         setupDrawer();
         setupPager();
+
+        progressBar = null;
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+
         setupOutputView();
         setupComicsView();
+
+        // todo swipe работает только на чистом поле, другие View перехватывают
+        pageFrameLayout = (FrameLayout)findViewById(R.id.pageFrameLayout);
+        pageFrameLayout.setOnTouchListener(this);
+
+        swipe = new Swipe();
 
         if (savedInstanceState == null)
         {
@@ -278,18 +311,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private String getPagerButtonTitle(String pageCode) {
         String title = pageCode;
-        if(pageType==BashPageType.AbyssBest){
+        if(pageType==BashPageType.AbyssBest || pageType==BashPageType.Comics){
             try {
                 Date date = new SimpleDateFormat("yyyyMMdd").parse(pageCode);
                 title = new SimpleDateFormat("dd.MM.yyyy").format(date);
             } catch (ParseException e) {
                 e.printStackTrace();
-                return title;
+                return pageCode;
             }
         }
 
         return title;
     }
+
+
 
     private class PagerListener implements View.OnClickListener {
         @Override
@@ -342,6 +377,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         currentQuotes.clear();
         currentQuotes.addAll(AdapterDataFactory.getData(bashPage));
         adapter.notifyDataSetChanged();
+        progressBar.setVisibility(View.GONE);
     }
 
     private void refreshComics(BashPage bashPage) {
@@ -354,7 +390,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             log("Null or null length in Comics Picture Url");
             return;
         }
-        Picasso.with(this).load(page.pictureUrl).into(comicsView);
+
+     //   progressBar.setVisibility(View.VISIBLE);
+
+        Picasso.with(this)
+                .load(page.pictureUrl)
+                .into(comicsView, new ImageLoadedCallback(progressBar));
+
         comicsAbout.setText(Html.fromHtml(page.about)); // Html in TextView trick
     }
 
@@ -373,6 +415,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
         setOnlineMode(true);
+        progressBar.setVisibility(View.VISIBLE);
 
         Bundle loaderArgs = new Bundle();
         loaderArgs.putInt(BashMenu.bundleTopicTag, topicNumber);
@@ -485,19 +528,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     // Switch to Topic..................................................................
     private void switchTopic(int topicNumber) {
         topicCurrent = topicNumber;
+        String title =  BashMenu.getTitle(topicNumber);
+        showMessage(getString(R.string.action_refresh_message) + " " + title);
 
-        getSupportActionBar().setTitle(BashMenu.getTitle(topicNumber));
+        getSupportActionBar().setTitle(title);
         // обращение через toolbar глючит, хоть тресни
         // toolbar.setTitle(BashMenu.getTitle(topicCurrent));
 
         if(BashMenu.getType(topicCurrent) == BashPageType.Comics)
         {
-            showMessage("Show Comics - menu position " + topicCurrent);
-            showComicsView(true);
+           showComicsView(true);
         }
         else {
             showComicsView(false);
-            showMessage(getString(R.string.action_refresh_message));
         }
 
         startBashLoader(topicCurrent, null);
@@ -520,6 +563,43 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         startBashLoader(topicUsed, pageCode);
     }
 
+    // Swipe Page Navigation.............................................................
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        if(pageFrameLayout==v){
+            showMessage("pageFrameLayout TOUCH");
+            return true;
+        }
+
+        if(swipe.isBlocked) return false;
+        float x = event.getX();
+        float y = event.getY();
+
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                swipe.start(x, y);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            case MotionEvent.ACTION_UP:
+                swipe.finish(x, y);
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                swipe.finish(x,y);
+                break;
+        }
+
+        if(swipe.isLeft) {
+            showMessage("Swipe LEFT");
+        }
+        else if(swipe.isRight){
+           showMessage("Swipe RIGHT");
+        }
+
+
+
+        return false;
+    }
 
     // ..........................................................................
     private void showMessage(String message){

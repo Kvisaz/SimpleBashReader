@@ -28,8 +28,34 @@
     </android.support.design.widget.AppBarLayout>
 
     <include layout="@layout/pager_main" />
-    <include layout="@layout/comics_main" />
-    <include layout="@layout/quotes_main" />
+
+
+
+    <FrameLayout
+        android:id="@+id/pageFrameLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp"
+            />
+
+        <include layout="@layout/comics_main" />
+        <include layout="@layout/quotes_main" />
+
+    </FrameLayout>
+
+
 
 
 

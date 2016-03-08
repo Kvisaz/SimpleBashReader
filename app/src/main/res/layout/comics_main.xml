@@ -7,18 +7,18 @@
     android:visibility="gone"
     android:padding="@dimen/margin"
     android:gravity="center"
+    android:scrollbars="vertical"
     >
 
-    <ru.kvisaz.bashreader.ResizableImageView
+    <ru.kvisaz.bashreader.image.ResizableImageView
         android:id="@+id/comicsImageView"
         android:gravity="center_horizontal"
         android:layout_gravity="fill_vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:adjustViewBounds="true"
         android:scaleType="fitCenter"
-        android:layout_weight="3"
-
+        android:layout_weight="0.9"
         />
 
     <TextView
@@ -28,6 +28,8 @@
         android:gravity="center"
         android:textSize="18sp"
         android:textColor="@color/colorTextBase"
-        android:text="Hello it`s Comics Page" />
-       android:layout_weight="1"
+        android:text="Hello it`s Comics Page"
+        android:layout_weight="0.1"
+        />
+
 </LinearLayout>

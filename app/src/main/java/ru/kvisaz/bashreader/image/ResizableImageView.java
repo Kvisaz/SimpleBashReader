@@ -1,4 +1,4 @@
-package ru.kvisaz.bashreader;
+package ru.kvisaz.bashreader.image;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;

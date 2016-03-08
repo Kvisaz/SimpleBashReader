@@ -34,6 +34,7 @@ public class BashMenu {
 
 
     public static String getTitle(int topicNumber) {
+        if(topicNumber < 0 || topicNumber >= items.length) return "";
         return items[topicNumber].title;
     }
 

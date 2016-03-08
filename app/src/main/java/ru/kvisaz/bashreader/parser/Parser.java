@@ -85,20 +85,17 @@ public class Parser {
             return;
         }
         page.pictureUrl = elTmp.attr("src");
-        Log.d(Constants.LOGTAG,"page.pictureUrl -- " + page.pictureUrl);
 
         elTmp = document.select("#boiler>.backlink").first();
         if(elTmp==null) return;
 
         page.about = elTmp.html();
-        Log.d(Constants.LOGTAG,"page.about -- " + page.about);
 
         elTmp = elTmp.select("a").first();
         if(elTmp!=null){
             page.authorUrl = elTmp.attr("href");
         }
 
-        Log.d(Constants.LOGTAG,"page.authorUrl -- " + page.authorUrl);
 
         int startQuote = page.about.indexOf("#")+1;
         if(startQuote==-1 || startQuote >= page.about.length()) return;
@@ -109,7 +106,6 @@ public class Parser {
             return;
         }
         page.quoteId = page.quoteId.substring(0,endQuote);
-        Log.d(Constants.LOGTAG,"page.quoteId -- " + page.quoteId);
         }
 
 
@@ -205,6 +201,7 @@ public class Parser {
         return code;
     }
 
+    // todo  исправить парсинг номера - чтобы подходило для любой длины
     // AbyssBest structure:  div.pager > a... a input a ... a a
     private static void setAbyssBestPages()
     {
@@ -243,6 +240,7 @@ public class Parser {
 
     }
 
+    // todo  исправить парсинг номера - чтобы подходило для любой длины
 // AbyssBest structure:  div.thumbs > a... a a.current a ... a a
     private static void setComicsPages()
     {
@@ -255,23 +253,22 @@ public class Parser {
         String[] pagerSplitHtml = pagerHtml.split("class=\"current\"");
 
         final int PAGECODE_LENGTH = 8; // 20160302
-
+//        !  prevPage и nextPage на сайте развернуты в другую сторону, здесь я их привожу к единому
+//           формату (prev - current - next)
         try {
             if (pagerSplitHtml.length == 2) { // must be always
                 String startTag = "comics/";
                 int start = pagerSplitHtml[0].lastIndexOf(startTag);
                 if (start != -1) {
                     start = start + startTag.length();
-                    bashPage.prevPage = pagerSplitHtml[0].substring(start, start + PAGECODE_LENGTH); // comics/20160302
-                    Log.d(Constants.LOGTAG,"bashPage.prevPage -- " + bashPage.prevPage);
+                    bashPage.nextPage = pagerSplitHtml[0].substring(start, start + PAGECODE_LENGTH); // comics/20160302
                 }
 
                 start = pagerSplitHtml[1].indexOf(startTag);
                 start = pagerSplitHtml[1].indexOf(startTag,start+startTag.length()); // защита от собственного а
                 if (start != -1) {
                     start = start + startTag.length();
-                    bashPage.nextPage = pagerSplitHtml[1].substring(start, start + PAGECODE_LENGTH); // comics/20150308
-                    Log.d(Constants.LOGTAG,"bashPage.nextPage -- " + bashPage.nextPage);
+                    bashPage.prevPage = pagerSplitHtml[1].substring(start, start + PAGECODE_LENGTH); // comics/20150308
                 }
 
             }
@@ -297,9 +294,16 @@ public class Parser {
         String text, date;
 
         try {
-            Elements idList = rawQuote.select(ID_QUERY);
+            String idQuery = ID_QUERY;
+            if(bashPage.type == BashPageType.AbyssTop) idQuery = "span.abysstop";
+            else if(bashPage.type == BashPageType.AbyssBest) idQuery = "span.id";
+            Elements idList = rawQuote.select(idQuery);
+
             Elements textList = rawQuote.select(TEXT_QUERY);
-            Elements dateList = rawQuote.select(DATE_QUERY);
+
+            String dateQuery = "span.date";
+            if(bashPage.type == BashPageType.AbyssTop) dateQuery = "span.abysstop-date";
+            Elements dateList = rawQuote.select(dateQuery);
             Elements ratingList = rawQuote.select(RATING_QUERY);
 
             // текст - обязателен. Ид и рейтинг нет (у цитат из бездны он не показывается).
@@ -315,9 +319,20 @@ public class Parser {
             // id ....
             if(idList.size()<1) { id = 0; }
             else{
-                String idStr = idList.first().attr("href");
-                idStr = idStr.replace("/quote/", "");
-                // у цитат в Бездне - id отсутствует, есть нумерация в AbyssBest
+                String idStr;
+                if(bashPage.type == BashPageType.AbyssTop) { //#1
+                    idStr = idList.first().text();
+                    idStr = idStr.replace("#", "");
+                }
+                else if(bashPage.type == BashPageType.AbyssBest) // #AA-290980
+                {
+                    idStr = idList.first().text();
+                    idStr = idStr.replace("#AA-", "");
+                }
+                else{ //#290980
+                    idStr = idList.first().attr("href");
+                    idStr = idStr.replace("/quote/", "");
+                }
                 try {
                     id = Integer.parseInt(idStr);
                 }
@@ -327,9 +342,7 @@ public class Parser {
             }
 
             if(dateList.size()<1) {date = "00";}
-            else{
-                date = dateList.first().text();
-            }
+            else { date = dateList.first().text(); }
 
             if(ratingList.size()<1) {rating = 0;}
             else{
