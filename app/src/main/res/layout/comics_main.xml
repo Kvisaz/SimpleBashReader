@@ -19,6 +19,8 @@
         android:adjustViewBounds="true"
         android:scaleType="fitCenter"
         android:layout_weight="0.9"
+        android:src="@drawable/comics_placeholder"
+        android:clickable="true"
         />
 
     <TextView

@@ -29,6 +29,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
@@ -75,7 +76,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     // todo Polish
    /*
             - свайпы (листнул, начал загрузку - блокировал свайп, загрузил - разрешил свайп
-
+            todo ПОСТАВЬ СВАЙПЫ И НА LISTVIEW И НА IMAGEVIEW
+            - image placeholder для комиксов
             + индикатор загрузки с анимацией Комиксы
             + индикатор загрузки с анимацией ЦИТАТЫ
             + выровнять страницы комикса - чтобы было как у цитат (Prev и next поменять местами
@@ -162,18 +164,21 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         setupOutputView();
         setupComicsView();
 
-        // todo swipe работает только на чистом поле, другие View перехватывают
         pageFrameLayout = (FrameLayout)findViewById(R.id.pageFrameLayout);
-        pageFrameLayout.setOnTouchListener(this);
 
-        swipe = new Swipe();
-
+        setupSwipe();
+        // starter page
         if (savedInstanceState == null)
         {
             switchTopic(topicUsed);
         }
     }
 
+    private void setupSwipe() {
+        listViewBashQuotes.setOnTouchListener(this);
+        comicsView.setOnTouchListener(this);
+        swipe = new Swipe();
+    }
 
 
     @Override
@@ -362,6 +367,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             refreshComics(bashPage);
         else
             refreshQuotes(bashPage);
+
+        swipe.let();
     }
 
     private void refreshQuotes(BashPage bashPage) {
@@ -391,10 +398,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             return;
         }
 
-     //   progressBar.setVisibility(View.VISIBLE);
-
         Picasso.with(this)
                 .load(page.pictureUrl)
+               // .placeholder(R.drawable.comics_placeholder) // progressBar выключается, если включить плейсхолдер
                 .into(comicsView, new ImageLoadedCallback(progressBar));
 
         comicsAbout.setText(Html.fromHtml(page.about)); // Html in TextView trick
@@ -589,11 +595,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 break;
         }
 
-        if(swipe.isLeft) {
-            showMessage("Swipe LEFT");
+        if(swipe.isRight) {
+            if(btPrev.getVisibility()==View.VISIBLE)
+            {
+                swipe.block();
+                btPrev.callOnClick();
+            }
         }
-        else if(swipe.isRight){
-           showMessage("Swipe RIGHT");
+        else if(swipe.isLeft){
+            if(btNext.getVisibility()==View.VISIBLE)
+            {
+                swipe.block();
+                btNext.callOnClick();
+            }
         }
 
 
@@ -603,7 +617,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     // ..........................................................................
     private void showMessage(String message){
-        Snackbar.make(listViewBashQuotes, message, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(pageFrameLayout, message, Snackbar.LENGTH_LONG).show(); // looks better than toast
+        //Toast.makeText(this,message,Toast.LENGTH_LONG).show();
     }
 
     private void log(String message) {
