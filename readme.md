@@ -28,6 +28,9 @@
 
 Источник кода - [StackOverflow: Android ImageView adjusting parent's height and fitting width] (http://stackoverflow.com/questions/5554682/android-imageview-adjusting-parents-height-and-fitting-width).  Я лишь немного отрефакторил те строчки (выделил переменные), чтобы лучше понимать внутреннюю механику пересчёта.
 
+## Swipe.java
+Для навигации по страницам используется простая симуляция свайпа через обработчик OnTouch на списке цитат и картинке в комиксах. 
+
 ## Планы
 
 1. Добавить сохранение выбранных цитат в закладки (локальная база данных)
