@@ -17,6 +17,8 @@
     <string name="ui_server_error_message">Сервер не отвечает</string>
     <string name="ui_parser_comics_error_message">Не могу распознать комикс...</string>
 
+    <string name="ui_comics_load_message">Одну минуточку...</string>
+
     <string name="pager_current_default">Обновить</string>
     <string name="pager_prev_default">Следующее</string>
     <string name="pager_prev_message">Загружаем</string>

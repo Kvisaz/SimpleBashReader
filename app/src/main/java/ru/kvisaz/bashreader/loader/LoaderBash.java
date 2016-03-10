@@ -7,7 +7,7 @@ import java.io.IOException;
 import ru.kvisaz.bashreader.model.BashPageType;
 import ru.kvisaz.bashreader.rest.Client;
 
-public class LoaderBash extends LoaderBase {
+public class LoaderBash extends LoaderBasic {
     private String pageCode; // id or date
     BashPageType pageType;
 

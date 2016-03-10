@@ -1,7 +1,11 @@
 package ru.kvisaz.bashreader.swipe;
 
 /**
- * Created by Builder on 08.03.2016.
+ *  Simple Swipe model
+ *   use start on touch
+ *   use finish on release
+ *   use block before long action after swipe
+ *   use unblock after long action
  */
 public class Swipe {
     public boolean isLeft;
@@ -10,7 +14,7 @@ public class Swipe {
 
     private float x, y;
     private final float kWork = 1.5f;
-    private final int minDistance = 50;
+    private final int minDistance = 20;
 
     public float dx;
     public float dy;

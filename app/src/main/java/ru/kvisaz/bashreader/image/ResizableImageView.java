@@ -26,8 +26,11 @@ public class ResizableImageView extends ImageView {
             float inHeight = (float) d.getIntrinsicHeight();
             float inWidth =  (float) d.getIntrinsicWidth();
 
-            if(inHeight<=inWidth)
-                height = (int) Math.ceil((float) width * inHeight / inWidth );
+//           if(inHeight<=inWidth)
+               height = (int) Math.ceil((float) width * inHeight / inWidth);
+
+
+
             setMeasuredDimension(width, height);
         }else{
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);

@@ -13,8 +13,10 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
+import android.text.method.LinkMovementMethod;
+import android.text.method.MovementMethod;
 import android.util.Log;
-import android.view.GestureDetector;
+
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -29,9 +31,13 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
+
+import com.squareup.picasso.MemoryPolicy;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
+
+import org.w3c.dom.Text;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -49,51 +55,19 @@ import ru.kvisaz.bashreader.swipe.Swipe;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String>, View.OnTouchListener {
 
-    // did 3 - навигация по страницам
-    //          + нужна функция
-    //          +  извлекаем pagecode из страницы в Parser
-    //          + дизайн кнопок страниц в quotes_main.xml
-    //          + включаем-выключаем кнопки в зависимости от наличия страниц
-    //          + передаем параметр страницы и обновляем её
-
-    // did Polish
-    //          + выделяем текущую страницу
-    //          + значки стрелок на prev, next
-
-    //          + изначально пейджер невидим - включаем в setPagerButtons
-//              + сообщение о загрузке в startLoader
-
-    // did BUG - btCurrent сбрасывает страницу, а не обновляет текущую
-    // did BUG - страницы Abbyss после второй слетают
-    // did Polish - при загрузке страницы, отмотать ListView вверх
-
-
-    // DID 9 - комиксы
-    //   ++  дизайн глагне
-    //   ++  ПАРСЕР пейджера
-    //   ++  загрузка картинки
-
     // todo Polish
    /*
-            - свайпы (листнул, начал загрузку - блокировал свайп, загрузил - разрешил свайп
-            todo ПОСТАВЬ СВАЙПЫ И НА LISTVIEW И НА IMAGEVIEW
-            - image placeholder для комиксов
-            + индикатор загрузки с анимацией Комиксы
-            + индикатор загрузки с анимацией ЦИТАТЫ
-            + выровнять страницы комикса - чтобы было как у цитат (Prev и next поменять местами
-            + красивая дата в заголовках страниц комикса
-            + дата в топе Бездны
-            + ид в топе Бездны
-            + ид в лучшем Бездны
-
-
-              - офлайн режим - отключить онлайн-пункты, сообщение
-              - офлайн режим - оставлять активными только офлайн-часть (буд)
+            - офлайн режим - отключить онлайн-пункты, сообщение
+            - офлайн режим - оставлять активными только офлайн-часть (буд)
                               - 1 пункт "проверить связь"
-
     */
 
-    // todo 5  - создание БД
+    //  todo ALERT DIALOG со списком
+        // - копировать
+        // - послать
+        // - занести в закладки (БД)
+
+    // todo 5  - создание БД и чтение закладок
     // todo 6  - сохранение полученных страниц в БД
     // todo 7  - получаем страницы из БД
     // todo 8 - навигация по страницам (если нет в БД - обращаемся в онлайн с уведомлением)
@@ -141,6 +115,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     ArrayList<Map<String,Object>> currentQuotes;
 
     final int BASH_LOADER_ID = 1;
+    final int DATABASE_LOADER_ID = 2;
 
 
     @Override
@@ -202,10 +177,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         comicsLayout = (LinearLayout) findViewById(R.id.comicsLayout);
         comicsView = (ImageView) findViewById(R.id.comicsImageView);
         comicsAbout = (TextView) findViewById(R.id.comicsAbout);
-    }
+
+      }
 
     private void setupOutputView() {
         listViewBashQuotes = (ListView) findViewById(R.id.listOfBashQuotes);
+        listViewBashQuotes.setOnItemClickListener(new QuoteClickListener());
         quotesLayout = (LinearLayout)findViewById(R.id.quotesLayout);
 
         setupListViewAdapter(listViewBashQuotes);
@@ -224,21 +201,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private void setupBar() {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                drawerLayout.openDrawer(GravityCompat.START);
-            }
-        });
-
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle(BashMenu.getTitle(topicUsed));
         // обращение через Toolbar toolbar глючит
         // возможное объяснение - см. https://code.google.com/p/android/issues/detail?id=77763
 
+
+
         if(!isStaticDrawer){
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
+
+            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
+            });
         }
 
 
@@ -400,13 +379,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         Picasso.with(this)
                 .load(page.pictureUrl)
-               // .placeholder(R.drawable.comics_placeholder) // progressBar выключается, если включить плейсхолдер
+                //.placeholder(R.drawable.comics_placeholder) // progressBar выключается, если включить плейсхолдер
                 .into(comicsView, new ImageLoadedCallback(progressBar));
+
 
         comicsAbout.setText(Html.fromHtml(page.about)); // Html in TextView trick
     }
 
-    //  Loader ..........................................................................
+    //  Bash Loader ..........................................................................
     private void startBashLoader(int topicNumber, String pagecode)
     {
         if(pagecode==null) pagecode="";
@@ -426,6 +406,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         Bundle loaderArgs = new Bundle();
         loaderArgs.putInt(BashMenu.bundleTopicTag, topicNumber);
         loaderArgs.putString(BashMenu.bundlePageCodeTag, pagecode);
+
 
         if(needReload){
             getLoaderManager().restartLoader(BASH_LOADER_ID, loaderArgs, this);
@@ -600,6 +581,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             {
                 swipe.block();
                 btPrev.callOnClick();
+
             }
         }
         else if(swipe.isLeft){
@@ -613,6 +595,24 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
         return false;
+    }
+
+    // Popup ..........................................................................
+    private class QuoteClickListener implements AdapterView.OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+           /* LinearLayout popupLayout = (LinearLayout)findViewById(R.id.popupLayout);
+
+            TextView quoteView = (TextView) view.findViewById(R.id.quoteText);
+            TextView popupText = (TextView) findViewById(R.id.popupText);
+            popupText.setText(quoteView.getText());
+
+            TextView quoteTitle = (TextView) view.findViewById(R.id.quoteDate);
+            TextView popupTitle = (TextView) view.findViewById(R.id.popupTitle);
+            popupTitle.setText(quoteTitle.getText());
+
+            popupLayout.setVisibility(View.VISIBLE);*/
+        }
     }
 
     // ..........................................................................
@@ -631,6 +631,4 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
-
-
 }

@@ -8,14 +8,16 @@ import java.io.IOException;
 
 import ru.kvisaz.bashreader.Constants;
 
-public abstract class LoaderBase extends AsyncTaskLoader<String> {
+public abstract class LoaderBasic extends AsyncTaskLoader<String> {
 
     protected abstract String clientResponse() throws IOException;
 
-    public LoaderBase(Context context) {
+    public LoaderBasic(Context context) {
         super(context);
     }
 
+    // http://stackoverflow.com/questions/8606048/asynctaskloader-doesnt-run
+    // http://stackoverflow.com/questions/10524667/android-asynctaskloader-doesnt-start-loadinbackground
     @Override
     protected void onStartLoading() {
         super.onStartLoading();
@@ -29,7 +31,7 @@ public abstract class LoaderBase extends AsyncTaskLoader<String> {
         }
         catch (IOException e)
         {
-            Log.d(Constants.LOGTAG,"LoaderBase ApiCall Exception");
+            Log.d(Constants.LOGTAG,"LoaderBasic ApiCall Exception");
             return  null;
         }
     }

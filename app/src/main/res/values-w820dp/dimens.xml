@@ -5,4 +5,10 @@
     <dimen name="activity_horizontal_margin">64dp</dimen>
     <dimen name="drawer_width">320dp</dimen>
     <dimen name="left_margin_width">320dp</dimen>
+
+    <dimen name="topbarTextSize">19sp</dimen>
+    <dimen name="comics_margin_left">16dp</dimen>
+    <dimen name="comics_about_size">18sp</dimen>
+    <dimen name="comics_about_minHeight">21dp</dimen>
+
 </resources>

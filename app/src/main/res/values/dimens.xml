@@ -13,8 +13,11 @@
     <dimen name="nav_header_height">160dp</dimen>
     <dimen name="drawer_width">240dp</dimen>
 
-    <dimen name="topbarTextSize">19sp</dimen>
+    <dimen name="topbarTextSize">16sp</dimen>
 
     <dimen name="left_margin_width">0dp</dimen>
+    <dimen name="comics_margin_left">0dp</dimen>
+    <dimen name="comics_about_size">14sp</dimen>
+    <dimen name="comics_about_minHeight">18dp</dimen>
 
 </resources>
