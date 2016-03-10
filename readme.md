@@ -6,9 +6,9 @@
   
 ## Библиотеки
 
-1. Retrofit 2.0 - для обращения к сайту
-2. JSoup 1.8 - для парсинга HTML 
-3. Picasso 2.5 - для загрузки комиксов
+1. [Retrofit 2.0](http://square.github.io/retrofit/) - для обращения к сайту
+2. [JSoup 1.8](http://jsoup.org/) - для парсинга HTML 
+3. [Picasso 2.5](http://square.github.io/picasso/) - для загрузки комиксов
 
 ## Архитектура
 В качестве клиент-серверной модели за основу была взят проект, описанный в этой статье на Хабре - [Android архитектура клиент-серверного приложения] (https://habrahabr.ru/company/e-Legion/blog/265405/).
